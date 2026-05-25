@@ -1,43 +1,75 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { ChladniSimulation } from '@/lib/chladni-simulation';
+import { ChladniSimulationCPU } from '@/lib/chladni-simulation-cpu';
 import { useChladniStore } from '@/lib/chladni-store';
 import { FieldVisualization } from './field-visualization';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
+import { Cpu, Sparkles } from 'lucide-react';
+
+type SimulationType = ChladniSimulation | ChladniSimulationCPU;
 
 interface SimulationCanvasProps {
-  onSimulationReady?: (simulation: ChladniSimulation) => void;
+  onSimulationReady?: (simulation: SimulationType) => void;
+}
+
+// Check if WebGL is available
+function isWebGLAvailable(): boolean {
+  try {
+    if (typeof window === 'undefined') return true;
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    return !!gl;
+  } catch {
+    return false;
+  }
 }
 
 export function SimulationCanvas({ onSimulationReady }: SimulationCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const simulationRef = useRef<ChladniSimulation | null>(null);
+  const simulationRef = useRef<SimulationType | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [rendererType, setRendererType] = useState<'webgl' | 'cpu'>(() => {
+    // Initial check - will be 'webgl' by default on server, 'cpu' if WebGL unavailable on client
+    return 'webgl';
+  });
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const { oscillators, simulation: config, isPlaying } = useChladniStore();
   
   // Initialize keyboard shortcuts
   useKeyboardShortcuts();
 
-  // Initialize simulation
+  // One-time initialization effect
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (isInitialized || !canvasRef.current) return;
     
-    const simulation = new ChladniSimulation(canvasRef.current, config);
+    const webGLAvailable = isWebGLAvailable();
+    let simulation: SimulationType;
+    
+    try {
+      if (!webGLAvailable) {
+        throw new Error('WebGL not available');
+      }
+      simulation = new ChladniSimulation(canvasRef.current, config);
+      setRendererType('webgl');
+    } catch (error) {
+      console.log('Falling back to CPU rendering:', error);
+      simulation = new ChladniSimulationCPU(canvasRef.current, config);
+      setRendererType('cpu');
+    }
+    
     simulationRef.current = simulation;
     onSimulationReady?.(simulation);
+    setIsInitialized(true);
     
     // Handle resize
-    const handleResize = () => {
-      simulation.resize();
-    };
+    const handleResize = () => simulation.resize();
     window.addEventListener('resize', handleResize);
     
     // Use ResizeObserver for container resize
-    const resizeObserver = new ResizeObserver(() => {
-      simulation.resize();
-    });
+    const resizeObserver = new ResizeObserver(() => simulation.resize());
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
     }
@@ -46,6 +78,8 @@ export function SimulationCanvas({ onSimulationReady }: SimulationCanvasProps) {
       window.removeEventListener('resize', handleResize);
       resizeObserver.disconnect();
       simulation.destroy();
+      simulationRef.current = null;
+      setIsInitialized(false);
     };
   }, []);
 
@@ -85,6 +119,28 @@ export function SimulationCanvas({ onSimulationReady }: SimulationCanvasProps) {
     simulationRef.current?.reset();
   }, []);
 
+  const switchToCPU = useCallback(() => {
+    if (!canvasRef.current) return;
+    
+    // Destroy existing simulation
+    if (simulationRef.current) {
+      simulationRef.current.destroy();
+      simulationRef.current = null;
+    }
+    
+    // Create CPU simulation
+    const simulation = new ChladniSimulationCPU(canvasRef.current, config);
+    simulationRef.current = simulation;
+    setRendererType('cpu');
+    
+    // Start if playing
+    if (isPlaying) {
+      simulation.start();
+    }
+  }, [config, isPlaying]);
+
+  const useCPU = rendererType === 'cpu';
+
   return (
     <div ref={containerRef} className="relative w-full h-full bg-[#0a0a0f]">
       <canvas
@@ -96,6 +152,21 @@ export function SimulationCanvas({ onSimulationReady }: SimulationCanvasProps) {
       {/* Field Visualization Overlay */}
       <FieldVisualization visible={config.showFieldVisualization} />
       
+      {/* Renderer indicator */}
+      <div className="absolute top-4 right-20 text-white/40 text-xs font-mono flex items-center gap-1">
+        {useCPU ? (
+          <>
+            <Cpu className="h-3 w-3" />
+            CPU
+          </>
+        ) : (
+          <>
+            <Sparkles className="h-3 w-3" />
+            GPU
+          </>
+        )}
+      </div>
+      
       {/* Overlay controls */}
       <div className="absolute bottom-12 left-4 flex gap-2">
         <button
@@ -104,6 +175,14 @@ export function SimulationCanvas({ onSimulationReady }: SimulationCanvasProps) {
         >
           Reset Particles
         </button>
+        {!useCPU && (
+          <button
+            onClick={switchToCPU}
+            className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg backdrop-blur-sm transition-colors"
+          >
+            Switch to CPU
+          </button>
+        )}
       </div>
       
       {/* Mode indicator */}
