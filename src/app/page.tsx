@@ -4,7 +4,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { SimulationCanvas } from '@/components/chladni-simulation-canvas';
 import { ControlPanel } from '@/components/control-panel';
 import { useChladniStore } from '@/lib/chladni-store';
-import { ChladniSimulation } from '@/lib/chladni-simulation';
+import { ChladniSimulation, ChladniSimulationCPU } from '@/lib/chladni-simulation';
 import { getAudioEngine } from '@/lib/audio-engine';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,7 +33,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 
 export default function Home() {
-  const simulationRef = useRef<ChladniSimulation | null>(null);
+  const simulationRef = useRef<ChladniSimulation | ChladniSimulationCPU | null>(null);
   const audioEngineRef = useRef(getAudioEngine());
   const [isFullscreen, setIsFullscreen] = useState(false);
   
@@ -46,7 +46,7 @@ export default function Home() {
   } = useChladniStore();
 
   // Handle simulation ready
-  const handleSimulationReady = useCallback((simulation: ChladniSimulation) => {
+  const handleSimulationReady = useCallback((simulation: ChladniSimulation | ChladniSimulationCPU) => {
     simulationRef.current = simulation;
   }, []);
 

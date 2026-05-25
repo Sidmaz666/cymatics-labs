@@ -13,14 +13,38 @@ export interface OscillatorConfig {
 }
 
 export interface SimulationConfig {
+  // Particle settings
   particleCount: number;
   particleSize: number;
+  particleDensity: number; // How tightly particles cluster
+  particleMass: number; // Affects momentum
+  particleTrail: number; // Trail persistence (0-1)
+  
+  // Physics settings
   dampingFactor: number;
   noiseAmount: number;
   speedMultiplier: number;
   plateSize: number;
+  gravity: number; // Downward force
+  friction: number; // Surface friction
+  bounceCoefficient: number; // Bounciness at boundaries
+  
+  // Vibration settings
+  vibrationIntensity: number; // Overall vibration strength
+  vibrationFrequency: number; // Base vibration frequency multiplier
+  harmonicStrength: number; // How much harmonics affect the pattern
+  
+  // Visualization settings
   showFieldVisualization: boolean;
   colorScheme: 'classic' | 'rainbow' | 'heat' | 'ocean' | 'neon';
+  glowIntensity: number; // Particle glow effect
+  contrastBoost: number; // Visual contrast
+  brightness: number; // Overall brightness
+  
+  // Advanced
+  modeMixing: number; // How multiple modes blend (0=separate, 1=blend)
+  timeEvolution: number; // Pattern evolution speed
+  symmetryLock: boolean; // Force symmetric patterns
 }
 
 export interface Preset {
@@ -73,14 +97,38 @@ const defaultOscillator: Omit<OscillatorConfig, 'id'> = {
 };
 
 const defaultSimulation: SimulationConfig = {
+  // Particle settings
   particleCount: 50000,
   particleSize: 2.0,
+  particleDensity: 1.0,
+  particleMass: 1.0,
+  particleTrail: 0.0,
+  
+  // Physics settings
   dampingFactor: 0.98,
   noiseAmount: 0.15,
   speedMultiplier: 1.0,
   plateSize: 2.0,
+  gravity: 0.0,
+  friction: 0.01,
+  bounceCoefficient: 0.5,
+  
+  // Vibration settings
+  vibrationIntensity: 1.0,
+  vibrationFrequency: 1.0,
+  harmonicStrength: 0.5,
+  
+  // Visualization settings
   showFieldVisualization: false,
   colorScheme: 'classic',
+  glowIntensity: 0.3,
+  contrastBoost: 0.0,
+  brightness: 1.0,
+  
+  // Advanced
+  modeMixing: 0.5,
+  timeEvolution: 0.0,
+  symmetryLock: false,
 };
 
 const builtInPresets: Preset[] = [
@@ -97,7 +145,7 @@ const builtInPresets: Preset[] = [
       { id: 'osc-1', ...defaultOscillator, modeM: 2, modeN: 3, frequency: 220, amplitude: 0.8 },
       { id: 'osc-2', ...defaultOscillator, modeM: 5, modeN: 7, frequency: 330, amplitude: 0.6 },
     ],
-    simulation: { particleCount: 80000 },
+    simulation: { particleCount: 80000, modeMixing: 0.7 },
   },
   {
     id: 'preset-3',
@@ -107,7 +155,7 @@ const builtInPresets: Preset[] = [
       { id: 'osc-2', ...defaultOscillator, modeM: 6, modeN: 6, frequency: 660, amplitude: 0.5 },
       { id: 'osc-3', ...defaultOscillator, modeM: 8, modeN: 8, frequency: 880, amplitude: 0.25 },
     ],
-    simulation: { particleCount: 60000, colorScheme: 'rainbow' },
+    simulation: { particleCount: 60000, colorScheme: 'rainbow', symmetryLock: true },
   },
   {
     id: 'preset-4',
@@ -116,7 +164,7 @@ const builtInPresets: Preset[] = [
       { id: 'osc-1', ...defaultOscillator, modeM: 1, modeN: 2, frequency: 55, amplitude: 1.0, waveform: 'triangle' },
       { id: 'osc-2', ...defaultOscillator, modeM: 2, modeN: 3, frequency: 82.5, amplitude: 0.7, waveform: 'triangle' },
     ],
-    simulation: { particleCount: 40000, speedMultiplier: 0.5 },
+    simulation: { particleCount: 40000, speedMultiplier: 0.5, vibrationIntensity: 1.5 },
   },
   {
     id: 'preset-5',
@@ -126,7 +174,55 @@ const builtInPresets: Preset[] = [
       { id: 'osc-2', ...defaultOscillator, modeM: 11, modeN: 13, frequency: 1320, amplitude: 0.6 },
       { id: 'osc-3', ...defaultOscillator, modeM: 13, modeN: 17, frequency: 1760, amplitude: 0.4 },
     ],
-    simulation: { particleCount: 100000, colorScheme: 'neon' },
+    simulation: { 
+      particleCount: 100000, 
+      colorScheme: 'neon', 
+      glowIntensity: 0.8,
+      vibrationIntensity: 0.8,
+    },
+  },
+  {
+    id: 'preset-6',
+    name: 'Heavy Grains',
+    oscillators: [{ id: 'osc-1', ...defaultOscillator, modeM: 5, modeN: 7, frequency: 330 }],
+    simulation: { 
+      particleCount: 30000, 
+      particleSize: 4.0, 
+      particleMass: 2.0,
+      dampingFactor: 0.95,
+      glowIntensity: 0.5,
+    },
+  },
+  {
+    id: 'preset-7',
+    name: 'Floating Dust',
+    oscillators: [
+      { id: 'osc-1', ...defaultOscillator, modeM: 3, modeN: 5, frequency: 440, amplitude: 0.6 },
+    ],
+    simulation: { 
+      particleCount: 20000, 
+      particleSize: 1.5, 
+      particleMass: 0.3,
+      noiseAmount: 0.3,
+      gravity: 0.001,
+      glowIntensity: 0.1,
+      brightness: 1.3,
+    },
+  },
+  {
+    id: 'preset-8',
+    name: 'Intense Vibration',
+    oscillators: [
+      { id: 'osc-1', ...defaultOscillator, modeM: 4, modeN: 6, frequency: 550, amplitude: 1.2 },
+    ],
+    simulation: { 
+      particleCount: 60000,
+      vibrationIntensity: 2.0,
+      noiseAmount: 0.25,
+      speedMultiplier: 1.5,
+      colorScheme: 'heat',
+      glowIntensity: 0.6,
+    },
   },
 ];
 

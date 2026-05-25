@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { SimulationConfig } from './chladni-store';
 
+// Re-export CPU simulation for fallback
+export { ChladniSimulationCPU } from './chladni-simulation-cpu';
+
 // Vertex shader for particle rendering
 const vertexShader = `
   attribute vec2 aPosition;
