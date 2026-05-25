@@ -13,19 +13,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -44,6 +36,8 @@ import {
   Atom,
   Zap,
   Activity,
+  Square,
+  Settings,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -92,9 +86,9 @@ export function ControlPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-zinc-900 border-l border-zinc-700">
-      {/* Play/Pause Header */}
-      <div className="flex-shrink-0 p-4 border-b border-zinc-700 space-y-4 bg-zinc-900">
+    <div className="h-full flex flex-col bg-zinc-950 border-l border-zinc-800">
+      {/* Play/Pause Header - FIXED, NOT SCROLLABLE */}
+      <div className="flex-shrink-0 p-4 border-b border-zinc-800 space-y-4 bg-zinc-950">
         <div className="flex items-center gap-2">
           <Button
             className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-medium"
@@ -117,7 +111,7 @@ export function ControlPanel() {
             variant="outline"
             size="lg"
             onClick={resetSimulation}
-            className="border-zinc-600 text-zinc-200 hover:text-white hover:bg-zinc-800"
+            className="border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800"
           >
             <RotateCcw className="h-4 w-4" />
           </Button>
@@ -126,7 +120,7 @@ export function ControlPanel() {
         {/* Master Volume */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-sm text-zinc-200 font-medium flex items-center gap-2">
+            <Label className="text-sm text-zinc-300 font-medium flex items-center gap-2">
               {masterVolume > 0 ? (
                 <Volume2 className="h-4 w-4 text-emerald-400" />
               ) : (
@@ -147,66 +141,52 @@ export function ControlPanel() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="oscillators" className="flex-1 flex flex-col min-h-0">
-        <TabsList className="flex-shrink-0 mx-4 mt-3 bg-zinc-800 p-1 gap-1">
-          <TabsTrigger value="oscillators" className="text-xs px-3 py-1.5 data-[state=active]:bg-zinc-700 data-[state=active]:text-white text-zinc-400 rounded transition-colors">
-            <Atom className="h-3.5 w-3.5 mr-1.5" />
-            Oscillators
-          </TabsTrigger>
-          <TabsTrigger value="physics" className="text-xs px-3 py-1.5 data-[state=active]:bg-zinc-700 data-[state=active]:text-white text-zinc-400 rounded transition-colors">
-            <Zap className="h-3.5 w-3.5 mr-1.5" />
-            Physics
-          </TabsTrigger>
-          <TabsTrigger value="visual" className="text-xs px-3 py-1.5 data-[state=active]:bg-zinc-700 data-[state=active]:text-white text-zinc-400 rounded transition-colors">
-            <Palette className="h-3.5 w-3.5 mr-1.5" />
-            Visual
-          </TabsTrigger>
-          <TabsTrigger value="presets" className="text-xs px-3 py-1.5 data-[state=active]:bg-zinc-700 data-[state=active]:text-white text-zinc-400 rounded transition-colors">
-            <Save className="h-3.5 w-3.5 mr-1.5" />
-            Presets
-          </TabsTrigger>
-        </TabsList>
+      {/* SCROLLABLE CONTENT AREA */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 space-y-2">
+          <Accordion type="multiple" defaultValue={['oscillators', 'particles', 'vibration', 'motion', 'visual']} className="space-y-2">
+            
+            {/* Oscillators Section */}
+            <AccordionItem value="oscillators" className="bg-zinc-900 border border-zinc-800 rounded-lg px-4">
+              <AccordionTrigger className="text-zinc-200 hover:text-white hover:no-underline py-3">
+                <div className="flex items-center gap-2">
+                  <Atom className="h-4 w-4 text-emerald-400" />
+                  <span className="font-medium">Oscillators</span>
+                  <span className="text-xs text-zinc-500 font-normal">({oscillators.filter(o => o.enabled).length} active)</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4">
+                <div className="space-y-3">
+                  {oscillators.map((osc, index) => (
+                    <OscillatorControl
+                      key={osc.id}
+                      oscillator={osc}
+                      index={index}
+                    />
+                  ))}
+                  
+                  <Button
+                    variant="outline"
+                    className="w-full border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 font-medium mt-2"
+                    onClick={addOscillator}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Oscillator
+                  </Button>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
 
-        {/* Oscillators Tab */}
-        <TabsContent value="oscillators" className="flex-1 min-h-0 m-0 mt-3" forceMount>
-          <ScrollArea className="h-full">
-            <div className="px-4 pb-4 space-y-4">
-              {/* Oscillator List */}
-              {oscillators.map((osc, index) => (
-                <OscillatorControl
-                  key={osc.id}
-                  oscillator={osc}
-                  index={index}
-                />
-              ))}
-              
-              {/* Add Oscillator Button */}
-              <Button
-                variant="outline"
-                className="w-full border-zinc-600 text-zinc-200 hover:text-white hover:bg-zinc-800 font-medium"
-                onClick={addOscillator}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Oscillator
-              </Button>
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        {/* Physics Tab */}
-        <TabsContent value="physics" className="flex-1 min-h-0 m-0 mt-3" forceMount>
-          <ScrollArea className="h-full">
-            <div className="px-4 pb-4 space-y-5">
-              {/* Particle Settings */}
-              <Card className="bg-zinc-800 border-zinc-700">
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="text-sm text-zinc-100 flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-amber-400" />
-                    Particles
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-5">
+            {/* Particles Section */}
+            <AccordionItem value="particles" className="bg-zinc-900 border border-zinc-800 rounded-lg px-4">
+              <AccordionTrigger className="text-zinc-200 hover:text-white hover:no-underline py-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-amber-400" />
+                  <span className="font-medium">Particles</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4">
+                <div className="space-y-4">
                   <SliderControl
                     label="Count"
                     value={simulation.particleCount}
@@ -252,18 +232,20 @@ export function ControlPanel() {
                     format="percent"
                     onChange={(v) => updateSimulation({ particleTrail: v })}
                   />
-                </CardContent>
-              </Card>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
 
-              {/* Vibration Settings */}
-              <Card className="bg-zinc-800 border-zinc-700">
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="text-sm text-zinc-100 flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-yellow-400" />
-                    Vibration
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-5">
+            {/* Vibration Section */}
+            <AccordionItem value="vibration" className="bg-zinc-900 border border-zinc-800 rounded-lg px-4">
+              <AccordionTrigger className="text-zinc-200 hover:text-white hover:no-underline py-3">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-yellow-400" />
+                  <span className="font-medium">Vibration</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4">
+                <div className="space-y-4">
                   <SliderControl
                     label="Intensity"
                     value={simulation.vibrationIntensity}
@@ -300,18 +282,20 @@ export function ControlPanel() {
                     format="percent"
                     onChange={(v) => updateSimulation({ modeMixing: v })}
                   />
-                </CardContent>
-              </Card>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
 
-              {/* Physics Settings */}
-              <Card className="bg-zinc-800 border-zinc-700">
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="text-sm text-zinc-100 flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-green-400" />
-                    Motion
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-5">
+            {/* Motion Section */}
+            <AccordionItem value="motion" className="bg-zinc-900 border border-zinc-800 rounded-lg px-4">
+              <AccordionTrigger className="text-zinc-200 hover:text-white hover:no-underline py-3">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-green-400" />
+                  <span className="font-medium">Motion</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4">
+                <div className="space-y-4">
                   <SliderControl
                     label="Damping"
                     value={simulation.dampingFactor}
@@ -366,15 +350,20 @@ export function ControlPanel() {
                     format="percent"
                     onChange={(v) => updateSimulation({ bounceCoefficient: v })}
                   />
-                </CardContent>
-              </Card>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
 
-              {/* Plate Settings */}
-              <Card className="bg-zinc-800 border-zinc-700">
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="text-sm text-zinc-100">Plate</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-5">
+            {/* Plate Section */}
+            <AccordionItem value="plate" className="bg-zinc-900 border border-zinc-800 rounded-lg px-4">
+              <AccordionTrigger className="text-zinc-200 hover:text-white hover:no-underline py-3">
+                <div className="flex items-center gap-2">
+                  <Square className="h-4 w-4 text-blue-400" />
+                  <span className="font-medium">Plate</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4">
+                <div className="space-y-4">
                   <SliderControl
                     label="Size"
                     value={simulation.plateSize}
@@ -385,7 +374,7 @@ export function ControlPanel() {
                     onChange={(v) => updateSimulation({ plateSize: v })}
                   />
                   <div className="flex items-center justify-between py-2">
-                    <Label className="text-sm text-zinc-200 font-medium">Symmetry Lock</Label>
+                    <Label className="text-sm text-zinc-300 font-medium">Symmetry Lock</Label>
                     <Switch
                       checked={simulation.symmetryLock}
                       onCheckedChange={(checked) => 
@@ -403,39 +392,34 @@ export function ControlPanel() {
                     format="percent"
                     onChange={(v) => updateSimulation({ timeEvolution: v })}
                   />
-                </CardContent>
-              </Card>
-            </div>
-          </ScrollArea>
-        </TabsContent>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
 
-        {/* Visual Tab */}
-        <TabsContent value="visual" className="flex-1 min-h-0 m-0 mt-3" forceMount>
-          <ScrollArea className="h-full">
-            <div className="px-4 pb-4 space-y-5">
-              {/* Color Settings */}
-              <Card className="bg-zinc-800 border-zinc-700">
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="text-sm text-zinc-100 flex items-center gap-2">
-                    <Palette className="h-4 w-4 text-purple-400" />
-                    Colors
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-5">
+            {/* Visual Section */}
+            <AccordionItem value="visual" className="bg-zinc-900 border border-zinc-800 rounded-lg px-4">
+              <AccordionTrigger className="text-zinc-200 hover:text-white hover:no-underline py-3">
+                <div className="flex items-center gap-2">
+                  <Palette className="h-4 w-4 text-purple-400" />
+                  <span className="font-medium">Visual</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4">
+                <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-sm text-zinc-200 font-medium">Color Scheme</Label>
+                    <Label className="text-sm text-zinc-300 font-medium">Color Scheme</Label>
                     <Select
                       value={simulation.colorScheme}
                       onValueChange={(value) => 
                         updateSimulation({ colorScheme: value as typeof simulation.colorScheme })
                       }
                     >
-                      <SelectTrigger className="bg-zinc-700 border-zinc-600 text-zinc-100">
+                      <SelectTrigger className="bg-zinc-800 border-zinc-700 text-zinc-200">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-zinc-700 border-zinc-600">
+                      <SelectContent className="bg-zinc-800 border-zinc-700">
                         {colorSchemes.map((scheme) => (
-                          <SelectItem key={scheme.value} value={scheme.value} className="text-zinc-100 focus:bg-zinc-600 focus:text-white">
+                          <SelectItem key={scheme.value} value={scheme.value} className="text-zinc-200 focus:bg-zinc-700 focus:text-white">
                             {scheme.label}
                           </SelectItem>
                         ))}
@@ -469,17 +453,8 @@ export function ControlPanel() {
                     format="decimal"
                     onChange={(v) => updateSimulation({ brightness: v })}
                   />
-                </CardContent>
-              </Card>
-
-              {/* Field Visualization */}
-              <Card className="bg-zinc-800 border-zinc-700">
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="text-sm text-zinc-100">Overlay</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
                   <div className="flex items-center justify-between py-2">
-                    <Label className="text-sm text-zinc-200 font-medium flex items-center gap-2">
+                    <Label className="text-sm text-zinc-300 font-medium flex items-center gap-2">
                       {simulation.showFieldVisualization ? (
                         <Eye className="h-4 w-4 text-emerald-400" />
                       ) : (
@@ -495,75 +470,85 @@ export function ControlPanel() {
                       className="data-[state=checked]:bg-emerald-600"
                     />
                   </div>
-                </CardContent>
-              </Card>
-              
-              {/* Export */}
-              <Button 
-                variant="outline" 
-                className="w-full border-zinc-600 text-zinc-200 hover:text-white hover:bg-zinc-800 font-medium" 
-                onClick={exportConfig}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export Configuration
-              </Button>
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        {/* Presets Tab */}
-        <TabsContent value="presets" className="flex-1 min-h-0 m-0 mt-3" forceMount>
-          <ScrollArea className="h-full">
-            <div className="px-4 pb-4 space-y-5">
-              {/* Save Preset */}
-              <Card className="bg-zinc-800 border-zinc-700">
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="text-sm text-zinc-100">Save Current Setup</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Preset name..."
-                      value={newPresetName}
-                      onChange={(e) => setNewPresetName(e.target.value)}
-                      className="bg-zinc-700 border-zinc-600 text-zinc-100 placeholder:text-zinc-500"
-                    />
-                    <Button 
-                      onClick={handleSavePreset} 
-                      disabled={!newPresetName.trim()}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white"
-                    >
-                      <Save className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Separator className="bg-zinc-700" />
-              
-              {/* Preset List */}
-              <div className="space-y-2">
-                <Label className="text-sm text-zinc-300 font-medium">Load Preset</Label>
-                <div className="grid gap-2">
-                  {presets.map((preset) => (
-                    <Button
-                      key={preset.id}
-                      variant="outline"
-                      className="w-full justify-start border-zinc-600 text-zinc-200 hover:text-white hover:bg-zinc-700 font-medium"
-                      onClick={() => loadPreset(preset.id)}
-                    >
-                      <span className="truncate">{preset.name}</span>
-                      <span className="ml-auto text-xs text-zinc-400 shrink-0">
-                        {preset.oscillators.length} osc
-                      </span>
-                    </Button>
-                  ))}
                 </div>
-              </div>
-            </div>
-          </ScrollArea>
-        </TabsContent>
-      </Tabs>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Presets Section */}
+            <AccordionItem value="presets" className="bg-zinc-900 border border-zinc-800 rounded-lg px-4">
+              <AccordionTrigger className="text-zinc-200 hover:text-white hover:no-underline py-3">
+                <div className="flex items-center gap-2">
+                  <Save className="h-4 w-4 text-cyan-400" />
+                  <span className="font-medium">Presets</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm text-zinc-300 font-medium">Save Current Setup</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Preset name..."
+                        value={newPresetName}
+                        onChange={(e) => setNewPresetName(e.target.value)}
+                        className="bg-zinc-800 border-zinc-700 text-zinc-200 placeholder:text-zinc-500"
+                      />
+                      <Button 
+                        onClick={handleSavePreset} 
+                        disabled={!newPresetName.trim()}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white shrink-0"
+                      >
+                        <Save className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {presets.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm text-zinc-400">Load Preset</Label>
+                      <div className="grid gap-2">
+                        {presets.map((preset) => (
+                          <Button
+                            key={preset.id}
+                            variant="outline"
+                            className="w-full justify-start border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 font-medium"
+                            onClick={() => loadPreset(preset.id)}
+                          >
+                            <span className="truncate">{preset.name}</span>
+                            <span className="ml-auto text-xs text-zinc-500 shrink-0">
+                              {preset.oscillators.length} osc
+                            </span>
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Export Section */}
+            <AccordionItem value="export" className="bg-zinc-900 border border-zinc-800 rounded-lg px-4">
+              <AccordionTrigger className="text-zinc-200 hover:text-white hover:no-underline py-3">
+                <div className="flex items-center gap-2">
+                  <Download className="h-4 w-4 text-orange-400" />
+                  <span className="font-medium">Export</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 font-medium" 
+                  onClick={exportConfig}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Configuration
+                </Button>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </div>
     </div>
   );
 }
@@ -604,9 +589,9 @@ function SliderControl({
   };
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <Label className="text-sm text-zinc-300 font-medium">{label}</Label>
+        <Label className="text-sm text-zinc-400">{label}</Label>
         <span className="text-sm font-mono text-emerald-400">{formatValue(value)}</span>
       </div>
       <Slider
