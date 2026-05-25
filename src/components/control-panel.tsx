@@ -36,8 +36,6 @@ import {
   Volume2,
   VolumeX,
   Palette,
-  Settings2,
-  Waves,
   Save,
   Download,
   Eye,
@@ -94,12 +92,12 @@ export function ControlPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-zinc-950 border-l border-zinc-800">
+    <div className="h-full flex flex-col bg-zinc-900 border-l border-zinc-700">
       {/* Play/Pause Header */}
-      <div className="flex-shrink-0 p-4 border-b border-zinc-800 space-y-4 bg-zinc-950">
+      <div className="flex-shrink-0 p-4 border-b border-zinc-700 space-y-4 bg-zinc-900">
         <div className="flex items-center gap-2">
           <Button
-            className="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white"
+            className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-medium"
             size="lg"
             onClick={() => setPlaying(!isPlaying)}
           >
@@ -119,7 +117,7 @@ export function ControlPanel() {
             variant="outline"
             size="lg"
             onClick={resetSimulation}
-            className="border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800"
+            className="border-zinc-600 text-zinc-200 hover:text-white hover:bg-zinc-800"
           >
             <RotateCcw className="h-4 w-4" />
           </Button>
@@ -128,15 +126,15 @@ export function ControlPanel() {
         {/* Master Volume */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs text-zinc-400 flex items-center gap-2">
+            <Label className="text-sm text-zinc-200 font-medium flex items-center gap-2">
               {masterVolume > 0 ? (
-                <Volume2 className="h-3 w-3" />
+                <Volume2 className="h-4 w-4 text-emerald-400" />
               ) : (
-                <VolumeX className="h-3 w-3" />
+                <VolumeX className="h-4 w-4 text-zinc-500" />
               )}
               Master Volume
             </Label>
-            <span className="text-xs font-mono text-zinc-400">{(masterVolume * 100).toFixed(0)}%</span>
+            <span className="text-sm font-mono text-emerald-400 font-medium">{(masterVolume * 100).toFixed(0)}%</span>
           </div>
           <Slider
             value={[masterVolume]}
@@ -151,29 +149,29 @@ export function ControlPanel() {
 
       {/* Tabs */}
       <Tabs defaultValue="oscillators" className="flex-1 flex flex-col min-h-0">
-        <TabsList className="flex-shrink-0 mx-4 mt-2 bg-zinc-900">
-          <TabsTrigger value="oscillators" className="text-xs data-[state=active]:bg-zinc-800">
-            <Waves className="h-3 w-3 mr-1" />
+        <TabsList className="flex-shrink-0 mx-4 mt-3 bg-zinc-800 p-1 gap-1">
+          <TabsTrigger value="oscillators" className="text-xs px-3 py-1.5 data-[state=active]:bg-zinc-700 data-[state=active]:text-white text-zinc-400 rounded transition-colors">
+            <Atom className="h-3.5 w-3.5 mr-1.5" />
             Oscillators
           </TabsTrigger>
-          <TabsTrigger value="physics" className="text-xs data-[state=active]:bg-zinc-800">
-            <Atom className="h-3 w-3 mr-1" />
+          <TabsTrigger value="physics" className="text-xs px-3 py-1.5 data-[state=active]:bg-zinc-700 data-[state=active]:text-white text-zinc-400 rounded transition-colors">
+            <Zap className="h-3.5 w-3.5 mr-1.5" />
             Physics
           </TabsTrigger>
-          <TabsTrigger value="visual" className="text-xs data-[state=active]:bg-zinc-800">
-            <Palette className="h-3 w-3 mr-1" />
+          <TabsTrigger value="visual" className="text-xs px-3 py-1.5 data-[state=active]:bg-zinc-700 data-[state=active]:text-white text-zinc-400 rounded transition-colors">
+            <Palette className="h-3.5 w-3.5 mr-1.5" />
             Visual
           </TabsTrigger>
-          <TabsTrigger value="presets" className="text-xs data-[state=active]:bg-zinc-800">
-            <Save className="h-3 w-3 mr-1" />
+          <TabsTrigger value="presets" className="text-xs px-3 py-1.5 data-[state=active]:bg-zinc-700 data-[state=active]:text-white text-zinc-400 rounded transition-colors">
+            <Save className="h-3.5 w-3.5 mr-1.5" />
             Presets
           </TabsTrigger>
         </TabsList>
 
         {/* Oscillators Tab */}
-        <TabsContent value="oscillators" className="flex-1 min-h-0 m-0 mt-2">
+        <TabsContent value="oscillators" className="flex-1 min-h-0 m-0 mt-3" forceMount>
           <ScrollArea className="h-full">
-            <div className="p-4 pt-0 space-y-4">
+            <div className="px-4 pb-4 space-y-4">
               {/* Oscillator List */}
               {oscillators.map((osc, index) => (
                 <OscillatorControl
@@ -186,7 +184,7 @@ export function ControlPanel() {
               {/* Add Oscillator Button */}
               <Button
                 variant="outline"
-                className="w-full border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800"
+                className="w-full border-zinc-600 text-zinc-200 hover:text-white hover:bg-zinc-800 font-medium"
                 onClick={addOscillator}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -197,18 +195,18 @@ export function ControlPanel() {
         </TabsContent>
 
         {/* Physics Tab */}
-        <TabsContent value="physics" className="flex-1 min-h-0 m-0 mt-2">
+        <TabsContent value="physics" className="flex-1 min-h-0 m-0 mt-3" forceMount>
           <ScrollArea className="h-full">
-            <div className="p-4 pt-0 space-y-4">
+            <div className="px-4 pb-4 space-y-5">
               {/* Particle Settings */}
-              <Card className="bg-zinc-900 border-zinc-800">
-                <CardHeader className="py-3">
-                  <CardTitle className="text-sm text-zinc-200 flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-amber-500" />
+              <Card className="bg-zinc-800 border-zinc-700">
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm text-zinc-100 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-amber-400" />
                     Particles
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-5">
                   <SliderControl
                     label="Count"
                     value={simulation.particleCount}
@@ -258,14 +256,14 @@ export function ControlPanel() {
               </Card>
 
               {/* Vibration Settings */}
-              <Card className="bg-zinc-900 border-zinc-800">
-                <CardHeader className="py-3">
-                  <CardTitle className="text-sm text-zinc-200 flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-yellow-500" />
+              <Card className="bg-zinc-800 border-zinc-700">
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm text-zinc-100 flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-yellow-400" />
                     Vibration
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-5">
                   <SliderControl
                     label="Intensity"
                     value={simulation.vibrationIntensity}
@@ -306,14 +304,14 @@ export function ControlPanel() {
               </Card>
 
               {/* Physics Settings */}
-              <Card className="bg-zinc-900 border-zinc-800">
-                <CardHeader className="py-3">
-                  <CardTitle className="text-sm text-zinc-200 flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-green-500" />
+              <Card className="bg-zinc-800 border-zinc-700">
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm text-zinc-100 flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-green-400" />
                     Motion
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-5">
                   <SliderControl
                     label="Damping"
                     value={simulation.dampingFactor}
@@ -372,11 +370,11 @@ export function ControlPanel() {
               </Card>
 
               {/* Plate Settings */}
-              <Card className="bg-zinc-900 border-zinc-800">
-                <CardHeader className="py-3">
-                  <CardTitle className="text-sm text-zinc-200">Plate</CardTitle>
+              <Card className="bg-zinc-800 border-zinc-700">
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm text-zinc-100">Plate</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-5">
                   <SliderControl
                     label="Size"
                     value={simulation.plateSize}
@@ -386,13 +384,14 @@ export function ControlPanel() {
                     format="decimal"
                     onChange={(v) => updateSimulation({ plateSize: v })}
                   />
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs text-zinc-400">Symmetry Lock</Label>
+                  <div className="flex items-center justify-between py-2">
+                    <Label className="text-sm text-zinc-200 font-medium">Symmetry Lock</Label>
                     <Switch
                       checked={simulation.symmetryLock}
                       onCheckedChange={(checked) => 
                         updateSimulation({ symmetryLock: checked })
                       }
+                      className="data-[state=checked]:bg-emerald-600"
                     />
                   </div>
                   <SliderControl
@@ -411,32 +410,32 @@ export function ControlPanel() {
         </TabsContent>
 
         {/* Visual Tab */}
-        <TabsContent value="visual" className="flex-1 min-h-0 m-0 mt-2">
+        <TabsContent value="visual" className="flex-1 min-h-0 m-0 mt-3" forceMount>
           <ScrollArea className="h-full">
-            <div className="p-4 pt-0 space-y-4">
+            <div className="px-4 pb-4 space-y-5">
               {/* Color Settings */}
-              <Card className="bg-zinc-900 border-zinc-800">
-                <CardHeader className="py-3">
-                  <CardTitle className="text-sm text-zinc-200 flex items-center gap-2">
-                    <Palette className="h-4 w-4 text-purple-500" />
+              <Card className="bg-zinc-800 border-zinc-700">
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm text-zinc-100 flex items-center gap-2">
+                    <Palette className="h-4 w-4 text-purple-400" />
                     Colors
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-5">
                   <div className="space-y-2">
-                    <Label className="text-xs text-zinc-400">Color Scheme</Label>
+                    <Label className="text-sm text-zinc-200 font-medium">Color Scheme</Label>
                     <Select
                       value={simulation.colorScheme}
                       onValueChange={(value) => 
                         updateSimulation({ colorScheme: value as typeof simulation.colorScheme })
                       }
                     >
-                      <SelectTrigger className="bg-zinc-800 border-zinc-700 text-zinc-200">
+                      <SelectTrigger className="bg-zinc-700 border-zinc-600 text-zinc-100">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-zinc-800 border-zinc-700">
+                      <SelectContent className="bg-zinc-700 border-zinc-600">
                         {colorSchemes.map((scheme) => (
-                          <SelectItem key={scheme.value} value={scheme.value} className="text-zinc-200 focus:bg-zinc-700">
+                          <SelectItem key={scheme.value} value={scheme.value} className="text-zinc-100 focus:bg-zinc-600 focus:text-white">
                             {scheme.label}
                           </SelectItem>
                         ))}
@@ -474,17 +473,17 @@ export function ControlPanel() {
               </Card>
 
               {/* Field Visualization */}
-              <Card className="bg-zinc-900 border-zinc-800">
-                <CardHeader className="py-3">
-                  <CardTitle className="text-sm text-zinc-200">Overlay</CardTitle>
+              <Card className="bg-zinc-800 border-zinc-700">
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm text-zinc-100">Overlay</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs text-zinc-400 flex items-center gap-2">
+                  <div className="flex items-center justify-between py-2">
+                    <Label className="text-sm text-zinc-200 font-medium flex items-center gap-2">
                       {simulation.showFieldVisualization ? (
-                        <Eye className="h-3 w-3" />
+                        <Eye className="h-4 w-4 text-emerald-400" />
                       ) : (
-                        <EyeOff className="h-3 w-3" />
+                        <EyeOff className="h-4 w-4 text-zinc-500" />
                       )}
                       Show Field Overlay
                     </Label>
@@ -493,6 +492,7 @@ export function ControlPanel() {
                       onCheckedChange={(checked) => 
                         updateSimulation({ showFieldVisualization: checked })
                       }
+                      className="data-[state=checked]:bg-emerald-600"
                     />
                   </div>
                 </CardContent>
@@ -501,7 +501,7 @@ export function ControlPanel() {
               {/* Export */}
               <Button 
                 variant="outline" 
-                className="w-full border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800" 
+                className="w-full border-zinc-600 text-zinc-200 hover:text-white hover:bg-zinc-800 font-medium" 
                 onClick={exportConfig}
               >
                 <Download className="h-4 w-4 mr-2" />
@@ -512,13 +512,13 @@ export function ControlPanel() {
         </TabsContent>
 
         {/* Presets Tab */}
-        <TabsContent value="presets" className="flex-1 min-h-0 m-0 mt-2">
+        <TabsContent value="presets" className="flex-1 min-h-0 m-0 mt-3" forceMount>
           <ScrollArea className="h-full">
-            <div className="p-4 pt-0 space-y-4">
+            <div className="px-4 pb-4 space-y-5">
               {/* Save Preset */}
-              <Card className="bg-zinc-900 border-zinc-800">
-                <CardHeader className="py-3">
-                  <CardTitle className="text-sm text-zinc-200">Save Current Setup</CardTitle>
+              <Card className="bg-zinc-800 border-zinc-700">
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm text-zinc-100">Save Current Setup</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex gap-2">
@@ -526,12 +526,12 @@ export function ControlPanel() {
                       placeholder="Preset name..."
                       value={newPresetName}
                       onChange={(e) => setNewPresetName(e.target.value)}
-                      className="bg-zinc-800 border-zinc-700 text-zinc-200 placeholder:text-zinc-500"
+                      className="bg-zinc-700 border-zinc-600 text-zinc-100 placeholder:text-zinc-500"
                     />
                     <Button 
                       onClick={handleSavePreset} 
                       disabled={!newPresetName.trim()}
-                      className="bg-amber-600 hover:bg-amber-500"
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white"
                     >
                       <Save className="h-4 w-4" />
                     </Button>
@@ -539,24 +539,26 @@ export function ControlPanel() {
                 </CardContent>
               </Card>
               
-              <Separator className="bg-zinc-800" />
+              <Separator className="bg-zinc-700" />
               
               {/* Preset List */}
               <div className="space-y-2">
-                <Label className="text-xs text-zinc-400">Load Preset</Label>
-                {presets.map((preset) => (
-                  <Button
-                    key={preset.id}
-                    variant="outline"
-                    className="w-full justify-start border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800"
-                    onClick={() => loadPreset(preset.id)}
-                  >
-                    {preset.name}
-                    <span className="ml-auto text-xs text-zinc-500">
-                      {preset.oscillators.length} osc
-                    </span>
-                  </Button>
-                ))}
+                <Label className="text-sm text-zinc-300 font-medium">Load Preset</Label>
+                <div className="grid gap-2">
+                  {presets.map((preset) => (
+                    <Button
+                      key={preset.id}
+                      variant="outline"
+                      className="w-full justify-start border-zinc-600 text-zinc-200 hover:text-white hover:bg-zinc-700 font-medium"
+                      onClick={() => loadPreset(preset.id)}
+                    >
+                      <span className="truncate">{preset.name}</span>
+                      <span className="ml-auto text-xs text-zinc-400 shrink-0">
+                        {preset.oscillators.length} osc
+                      </span>
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
           </ScrollArea>
@@ -602,10 +604,10 @@ function SliderControl({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       <div className="flex items-center justify-between">
-        <Label className="text-xs text-zinc-400">{label}</Label>
-        <span className="text-xs font-mono text-zinc-500">{formatValue(value)}</span>
+        <Label className="text-sm text-zinc-300 font-medium">{label}</Label>
+        <span className="text-sm font-mono text-emerald-400">{formatValue(value)}</span>
       </div>
       <Slider
         value={[value]}

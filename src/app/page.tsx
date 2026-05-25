@@ -114,13 +114,13 @@ export default function Home() {
   return (
     <main className="h-screen w-screen overflow-hidden flex flex-col bg-[#0a0a0f]">
       {/* Header */}
-      <header className="flex-shrink-0 h-14 border-b border-white/10 flex items-center justify-between px-4 bg-black/20 backdrop-blur-sm z-50">
+      <header className="flex-shrink-0 h-14 border-b border-zinc-800 flex items-center justify-between px-4 bg-zinc-900 z-50">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setShowControls(!showControls)}
-            className="text-white/70 hover:text-white"
+            className="text-zinc-400 hover:text-white hover:bg-zinc-800"
           >
             {showControls ? (
               <PanelLeftClose className="h-5 w-5" />
@@ -130,60 +130,60 @@ export default function Home() {
           </Button>
           
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
               <span className="text-white font-bold text-sm">C</span>
             </div>
-            <h1 className="text-white font-semibold text-lg">
+            <h1 className="text-zinc-100 font-semibold text-lg">
               Chladni Pattern Simulator
             </h1>
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {/* Keyboard Shortcuts Dialog */}
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-white/70 hover:text-white">
+              <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-zinc-800">
                 <Keyboard className="h-5 w-5" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md bg-zinc-900 border-zinc-700">
               <DialogHeader>
-                <DialogTitle>Keyboard Shortcuts</DialogTitle>
+                <DialogTitle className="text-zinc-100">Keyboard Shortcuts</DialogTitle>
               </DialogHeader>
-              <div className="grid gap-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Play/Pause</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Space</kbd>
+              <div className="grid gap-3 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400">Play/Pause</span>
+                  <kbd className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs font-mono text-zinc-300">Space</kbd>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Add oscillator</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Shift+O</kbd>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400">Add oscillator</span>
+                  <kbd className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs font-mono text-zinc-300">Shift+O</kbd>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Reset particles</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">R</kbd>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400">Reset particles</span>
+                  <kbd className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs font-mono text-zinc-300">R</kbd>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Toggle controls</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">H</kbd>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400">Toggle controls</span>
+                  <kbd className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs font-mono text-zinc-300">H</kbd>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Toggle field visualization</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">V</kbd>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400">Toggle field overlay</span>
+                  <kbd className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs font-mono text-zinc-300">V</kbd>
                 </div>
-                <Separator className="my-2" />
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Toggle oscillator 1-4</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">1-4</kbd>
+                <Separator className="bg-zinc-700 my-1" />
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400">Toggle oscillator 1-4</span>
+                  <kbd className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs font-mono text-zinc-300">1-4</kbd>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Change mode M</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">↑ / ↓</kbd>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400">Change mode M</span>
+                  <kbd className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs font-mono text-zinc-300">↑ / ↓</kbd>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Change mode N</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">← / →</kbd>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400">Change mode N</span>
+                  <kbd className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs font-mono text-zinc-300">← / →</kbd>
                 </div>
               </div>
             </DialogContent>
@@ -192,38 +192,38 @@ export default function Home() {
           {/* About Dialog */}
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-white/70 hover:text-white">
+              <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-zinc-800">
                 <Info className="h-5 w-5" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl bg-zinc-900 border-zinc-700">
               <DialogHeader>
-                <DialogTitle>About Chladni Patterns</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-zinc-100">About Chladni Patterns</DialogTitle>
+                <DialogDescription className="text-zinc-400">
                   A physics-based simulation of Chladni figures
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 text-sm text-muted-foreground">
+              <div className="space-y-4 text-sm text-zinc-400">
                 <p>
-                  <strong className="text-foreground">Chladni patterns</strong> are formed when a 
+                  <strong className="text-zinc-200">Chladni patterns</strong> are formed when a 
                   flat surface, covered with sand or similar particles, is vibrated at specific 
                   frequencies. Named after German physicist Ernst Chladni (1756–1827), these patterns 
                   reveal the nodal lines—regions of minimal vibration—where particles accumulate.
                 </p>
                 <p>
-                  <strong className="text-foreground">The Physics:</strong> For a square plate, 
+                  <strong className="text-zinc-200">The Physics:</strong> For a square plate, 
                   the vibration pattern is described by the equation:
                 </p>
-                <div className="bg-muted p-3 rounded-lg font-mono text-center">
+                <div className="bg-zinc-800 border border-zinc-700 p-3 rounded-lg font-mono text-center text-zinc-300">
                   z(x,y) = cos(mπx)·cos(nπy) − cos(nπx)·cos(mπy)
                 </div>
                 <p>
-                  Where <strong className="text-foreground">m</strong> and <strong className="text-foreground">n</strong> are 
+                  Where <strong className="text-zinc-200">m</strong> and <strong className="text-zinc-200">n</strong> are 
                   mode numbers that determine the pattern&apos;s complexity. Different combinations 
                   create different geometric shapes.
                 </p>
                 <p>
-                  <strong className="text-foreground">How to use:</strong>
+                  <strong className="text-zinc-200">How to use:</strong>
                 </p>
                 <ul className="list-disc list-inside space-y-1 ml-2">
                   <li>Add multiple oscillators to create complex interference patterns</li>
@@ -243,7 +243,7 @@ export default function Home() {
                   variant="ghost"
                   size="icon"
                   onClick={toggleFullscreen}
-                  className="text-white/70 hover:text-white"
+                  className="text-zinc-400 hover:text-white hover:bg-zinc-800"
                 >
                   {isFullscreen ? (
                     <Minimize2 className="h-5 w-5" />
@@ -252,7 +252,7 @@ export default function Home() {
                   )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>
+              <TooltipContent className="bg-zinc-800 border-zinc-700 text-zinc-200">
                 {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
               </TooltipContent>
             </Tooltip>
@@ -262,9 +262,9 @@ export default function Home() {
             href="https://github.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-white/70 hover:text-white"
+            className="text-zinc-400 hover:text-white"
           >
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="hover:bg-zinc-800">
               <Github className="h-5 w-5" />
             </Button>
           </a>
