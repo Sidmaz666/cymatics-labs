@@ -159,6 +159,7 @@ export class ChladniSimulation {
       antialias: true,
       alpha: true,
       powerPreference: 'high-performance',
+      preserveDrawingBuffer: true,
     })
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.setClearColor(hexToColor(config.backgroundColor), 1)
