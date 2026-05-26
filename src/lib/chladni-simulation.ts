@@ -1,429 +1,495 @@
-import * as THREE from 'three';
-import { SimulationConfig } from './chladni-store';
+import * as THREE from 'three'
+import { SimulationConfig, ModeInput, ColorScheme, computeChladniGradient, applyWaveformToGradient, OscillatorType } from './chladni-physics'
 
-// Re-export CPU simulation for fallback
-export { ChladniSimulationCPU } from './chladni-simulation-cpu';
+function hexToColor(hex: string): THREE.Color {
+  return new THREE.Color(hex)
+}
 
-// Vertex shader for particle rendering
-const vertexShader = `
-  attribute vec2 aPosition;
-  attribute vec2 aVelocity;
+function hexToCSS(hex: string): string {
+  return hex
+}
+
+const VERTEX_SHADER = `
   attribute float aLife;
-  
+  attribute vec2 aVelocity;
+
   uniform float uPointSize;
-  uniform vec2 uResolution;
   uniform float uTime;
-  uniform float uPlateSize;
-  
+
   varying float vLife;
   varying float vIntensity;
-  varying vec2 vPos;
-  
+
   void main() {
     vLife = aLife;
-    vPos = aPosition;
-    
-    // Calculate intensity based on velocity
     vIntensity = length(aVelocity) * 10.0;
-    
-    // Map position to clip space
-    vec2 clipPos = aPosition / uPlateSize;
-    
-    gl_Position = vec4(clipPos, 0.0, 1.0);
+
+    vec4 mvPosition = modelViewMatrix * vec4(position.xy, 0.0, 1.0);
+    gl_Position = projectionMatrix * mvPosition;
     gl_PointSize = uPointSize * (0.5 + vLife * 0.5);
   }
-`;
+`
 
-// Fragment shader for particle rendering with color schemes
-const fragmentShader = `
-  precision highp float;
-  
-  uniform int uColorScheme;
-  uniform float uTime;
-  
-  varying float vLife;
-  varying float vIntensity;
-  varying vec2 vPos;
-  
-  vec3 classicColor(float life, float intensity) {
-    float brightness = 0.6 + life * 0.4;
-    return vec3(brightness * 0.95, brightness * 0.85, brightness * 0.75);
-  }
-  
-  vec3 rainbowColor(float life, float intensity, vec2 pos) {
-    float angle = atan(pos.y, pos.x);
-    float hue = (angle + 3.14159) / (2.0 * 3.14159);
-    hue += uTime * 0.05;
-    
-    // HSV to RGB
-    float h = hue * 6.0;
-    float s = 0.7 + intensity * 0.3;
-    float v = 0.6 + life * 0.4;
-    
-    int i = int(floor(h));
-    float f = h - floor(h);
-    float p = v * (1.0 - s);
-    float q = v * (1.0 - s * f);
-    float t = v * (1.0 - s * (1.0 - f));
-    
-    if (i == 0) return vec3(v, t, p);
-    if (i == 1) return vec3(q, v, p);
-    if (i == 2) return vec3(p, v, t);
-    if (i == 3) return vec3(p, q, v);
-    if (i == 4) return vec3(t, p, v);
-    return vec3(v, p, q);
-  }
-  
-  vec3 heatColor(float life, float intensity) {
-    float t = life * 0.8 + intensity * 0.2;
-    return mix(
-      mix(vec3(0.0, 0.0, 0.3), vec3(0.8, 0.2, 0.0), t),
-      vec3(1.0, 1.0, 0.8),
-      t * t
-    );
-  }
-  
-  vec3 oceanColor(float life, float intensity) {
-    float t = life * 0.7 + intensity * 0.3;
-    return mix(
-      vec3(0.0, 0.1, 0.3),
-      mix(vec3(0.0, 0.5, 0.7), vec3(0.8, 1.0, 1.0), t),
-      t
-    );
-  }
-  
-  vec3 neonColor(float life, float intensity) {
-    float t = life;
-    vec3 pink = vec3(1.0, 0.0, 0.6);
-    vec3 cyan = vec3(0.0, 1.0, 1.0);
-    vec3 purple = vec3(0.6, 0.0, 1.0);
-    
-    float cycle = sin(uTime * 2.0 + vPos.x * 3.0 + vPos.y * 3.0) * 0.5 + 0.5;
-    return mix(mix(pink, cyan, cycle), purple, t) * (0.8 + t * 0.4);
-  }
-  
-  void main() {
-    // Circular particle with soft edges
-    vec2 center = gl_PointCoord - vec2(0.5);
-    float dist = length(center);
-    if (dist > 0.5) discard;
-    
-    float alpha = 1.0 - smoothstep(0.3, 0.5, dist);
-    alpha *= vLife;
-    
-    vec3 color;
-    if (uColorScheme == 0) {
-      color = classicColor(vLife, vIntensity);
-    } else if (uColorScheme == 1) {
-      color = rainbowColor(vLife, vIntensity, vPos);
-    } else if (uColorScheme == 2) {
-      color = heatColor(vLife, vIntensity);
-    } else if (uColorScheme == 3) {
-      color = oceanColor(vLife, vIntensity);
-    } else {
-      color = neonColor(vLife, vIntensity);
+function fragmentShaderForScheme(scheme: ColorScheme): string {
+  const schemeFn = getSchemeFn(scheme)
+
+  return `
+    precision highp float;
+
+    varying float vLife;
+    varying float vIntensity;
+
+    ${schemeFn}
+
+    void main() {
+      vec2 center = gl_PointCoord - vec2(0.5);
+      float dist = length(center);
+      if (dist > 0.5) discard;
+
+      float alpha = 1.0 - smoothstep(0.3, 0.5, dist);
+      alpha *= vLife;
+
+      vec3 color = getColor(vLife, vIntensity);
+
+      gl_FragColor = vec4(color, alpha);
     }
-    
-    // Add glow effect
-    color += vIntensity * 0.3;
-    
-    gl_FragColor = vec4(color, alpha);
-  }
-`;
-
-// Physics compute shader - calculates Chladni force field
-export function computeChladniField(
-  x: number,
-  y: number,
-  modes: Array<{ m: number; n: number; amplitude: number }>,
-  plateSize: number
-): number {
-  // Normalize coordinates to [-1, 1]
-  const nx = (x / plateSize) * Math.PI;
-  const ny = (y / plateSize) * Math.PI;
-  
-  let z = 0;
-  let totalAmplitude = 0;
-  
-  for (const mode of modes) {
-    // Chladni equation: z = cos(mπx)cos(nπy) - cos(nπx)cos(mπy)
-    // This creates standing wave patterns on a square plate
-    const term1 = Math.cos(mode.m * nx) * Math.cos(mode.n * ny);
-    const term2 = Math.cos(mode.n * nx) * Math.cos(mode.m * ny);
-    z += mode.amplitude * (term1 - term2);
-    totalAmplitude += mode.amplitude;
-  }
-  
-  // Normalize
-  return totalAmplitude > 0 ? z / totalAmplitude : 0;
+  `
 }
 
-// Compute gradient of the Chladni field (for particle movement)
-export function computeChladniGradient(
-  x: number,
-  y: number,
-  modes: Array<{ m: number; n: number; amplitude: number }>,
-  plateSize: number
-): { gx: number; gy: number } {
-  const epsilon = 0.001;
-  
-  const zCenter = computeChladniField(x, y, modes, plateSize);
-  const zRight = computeChladniField(x + epsilon, y, modes, plateSize);
-  const zUp = computeChladniField(x, y + epsilon, modes, plateSize);
-  
-  // Gradient points towards nodes (where z = 0)
-  // We want particles to move AWAY from antinodes (high |z|) towards nodes (low |z|)
-  // So we compute gradient of |z|² and move in the negative direction
-  
-  const dzdx = (zRight - zCenter) / epsilon;
-  const dzdy = (zUp - zCenter) / epsilon;
-  
-  // Gradient of z² is 2z * gradient(z)
-  // Particles move towards nodes, so we return the gradient of amplitude
-  return {
-    gx: -2 * zCenter * dzdx,
-    gy: -2 * zCenter * dzdy,
-  };
-}
-
-export interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
+function getSchemeFn(scheme: ColorScheme): string {
+  switch (scheme) {
+    case 'classic':
+      return `
+        vec3 getColor(float life, float intensity) {
+          float b = 0.6 + life * 0.4;
+          return vec3(b * 0.95, b * 0.85, b * 0.75);
+        }
+      `
+    case 'rainbow':
+      return `
+        uniform float uTime;
+        vec3 getColor(float life, float intensity) {
+          float b = 0.6 + life * 0.4;
+          float hue = uTime * 0.05;
+          float h = fract(hue) * 6.0;
+          int i = int(floor(h));
+          float f = h - floor(h);
+          float p = b * (1.0 - 0.7);
+          float q = b * (1.0 - 0.7 * f);
+          float t = b * (1.0 - 0.7 * (1.0 - f));
+          if (i == 0) return vec3(b, t, p);
+          if (i == 1) return vec3(q, b, p);
+          if (i == 2) return vec3(p, b, t);
+          if (i == 3) return vec3(p, q, b);
+          if (i == 4) return vec3(t, p, b);
+          return vec3(b, p, q);
+        }
+      `
+    case 'heat':
+      return `
+        vec3 getColor(float life, float intensity) {
+          float t = life * 0.8 + intensity * 0.2;
+          if (t < 0.5) {
+            return mix(vec3(0.0, 0.0, 0.3), vec3(0.8, 0.2, 0.0), t * 2.0);
+          }
+          return mix(vec3(0.8, 0.2, 0.0), vec3(1.0, 1.0, 0.8), (t - 0.5) * 2.0);
+        }
+      `
+    case 'ocean':
+      return `
+        vec3 getColor(float life, float intensity) {
+          float t = life * 0.7 + intensity * 0.3;
+          return mix(vec3(0.0, 0.1, 0.3), mix(vec3(0.0, 0.5, 0.7), vec3(0.8, 1.0, 1.0), t), t);
+        }
+      `
+    case 'neon':
+      return `
+        uniform float uTime;
+        uniform float uGlow;
+        vec3 getColor(float life, float intensity) {
+          float t = life;
+          vec3 pink = vec3(1.0, 0.0, 0.6);
+          vec3 cyan = vec3(0.0, 1.0, 1.0);
+          float cycle = sin(uTime * 2.0) * 0.5 + 0.5;
+          return mix(mix(pink, cyan, cycle), vec3(0.6, 0.0, 1.0), t) * (0.8 + t * 0.4 + uGlow * 0.3);
+        }
+      `
+    case 'custom':
+      return `
+        uniform vec3 uColorA;
+        uniform vec3 uColorB;
+        vec3 getColor(float life, float intensity) {
+          float t = life * 0.7 + intensity * 0.3;
+          return mix(uColorA, uColorB, t);
+        }
+      `
+  }
 }
 
 export class ChladniSimulation {
-  private canvas: HTMLCanvasElement;
-  private renderer: THREE.WebGLRenderer;
-  private scene: THREE.Scene;
-  private camera: THREE.OrthographicCamera;
-  private particleGeometry: THREE.BufferGeometry;
-  private particleMaterial: THREE.ShaderMaterial;
-  private particles: Float32Array;
-  private velocities: Float32Array;
-  private lives: Float32Array;
-  private config: SimulationConfig;
-  private modes: Array<{ m: number; n: number; amplitude: number }> = [];
-  private animationId: number | null = null;
-  private time: number = 0;
+  private canvas: HTMLCanvasElement
+  private renderer: THREE.WebGLRenderer
+  private scene: THREE.Scene
+  private camera: THREE.OrthographicCamera
+  private geometry: THREE.BufferGeometry
+  private material: THREE.ShaderMaterial
+  private points: THREE.Points
+
+  private pos: Float32Array
+  private vel: Float32Array
+  private life: Float32Array
+
+  private config: SimulationConfig
+  private modes: ModeInput[] = []
+  private currentWaveform: OscillatorType = 'sine'
+  private time = 0
+  private lastTime = 0
+  private animId: number | null = null
+  private destroyed = false
+
+  public zoom = 1
+  public panX = 0
+  public panY = 0
 
   constructor(canvas: HTMLCanvasElement, config: SimulationConfig) {
-    this.canvas = canvas;
-    this.config = config;
-    
-    // Initialize Three.js
+    this.canvas = canvas
+    this.config = { ...config }
+
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
       alpha: true,
-    });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setClearColor(0x0a0a0f, 1);
-    
-    this.scene = new THREE.Scene();
-    
-    // Orthographic camera for 2D
-    this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    
-    // Initialize particle data
-    const count = config.particleCount;
-    this.particles = new Float32Array(count * 2);
-    this.velocities = new Float32Array(count * 2);
-    this.lives = new Float32Array(count);
-    
-    this.initializeParticles();
-    
-    // Create geometry
-    this.particleGeometry = new THREE.BufferGeometry();
-    this.particleGeometry.setAttribute('aPosition', new THREE.BufferAttribute(this.particles, 2));
-    this.particleGeometry.setAttribute('aVelocity', new THREE.BufferAttribute(this.velocities, 2));
-    this.particleGeometry.setAttribute('aLife', new THREE.BufferAttribute(this.lives, 1));
-    
-    // Create material with shaders
-    this.particleMaterial = new THREE.ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      uniforms: {
-        uPointSize: { value: config.particleSize },
-        uResolution: { value: new THREE.Vector2(canvas.width, canvas.height) },
-        uTime: { value: 0 },
-        uPlateSize: { value: config.plateSize },
-        uColorScheme: { value: 0 },
-      },
+      powerPreference: 'high-performance',
+    })
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    this.renderer.setClearColor(hexToColor(config.backgroundColor), 1)
+
+    this.scene = new THREE.Scene()
+    this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
+
+    const count = config.particleCount
+    this.pos = new Float32Array(count * 3)
+    this.vel = new Float32Array(count * 2)
+    this.life = new Float32Array(count)
+
+    this.geometry = new THREE.BufferGeometry()
+    this.geometry.setAttribute('position', new THREE.BufferAttribute(this.pos, 3))
+    this.geometry.setAttribute('aVelocity', new THREE.BufferAttribute(this.vel, 2))
+    this.geometry.setAttribute('aLife', new THREE.BufferAttribute(this.life, 1))
+
+    const fragSrc = fragmentShaderForScheme(config.colorScheme)
+    const uniforms: Record<string, THREE.IUniform> = {
+      uPointSize: { value: config.particleSize },
+      uTime: { value: 0 },
+    }
+    if (config.colorScheme === 'rainbow' || config.colorScheme === 'neon') {
+      uniforms.uTime = { value: 0 }
+    }
+    if (config.colorScheme === 'neon') {
+      uniforms.uGlow = { value: config.glowIntensity }
+    }
+    if (config.colorScheme === 'custom') {
+      uniforms.uColorA = { value: hexToColor(config.customPrimary) }
+      uniforms.uColorB = { value: hexToColor(config.customSecondary) }
+    }
+
+    this.material = new THREE.ShaderMaterial({
+      vertexShader: VERTEX_SHADER,
+      fragmentShader: fragSrc,
+      uniforms,
       transparent: true,
       depthTest: false,
       blending: THREE.AdditiveBlending,
-    });
-    
-    // Create points
-    const points = new THREE.Points(this.particleGeometry, this.particleMaterial);
-    this.scene.add(points);
-    
-    this.resize();
+    })
+
+    this.points = new THREE.Points(this.geometry, this.material)
+    this.scene.add(this.points)
+
+    this.initParticles()
+    this.resize()
+    this.renderer.render(this.scene, this.camera)
   }
 
-  private initializeParticles(): void {
-    const count = this.particles.length / 2;
-    const halfPlate = this.config.plateSize * 0.95;
-    
+  private initParticles(): void {
+    const count = this.pos.length / 3
+    const half = this.config.plateSize
+    const spread = half * 3
+
     for (let i = 0; i < count; i++) {
-      // Random initial position within the plate
-      this.particles[i * 2] = (Math.random() - 0.5) * 2 * halfPlate;
-      this.particles[i * 2 + 1] = (Math.random() - 0.5) * 2 * halfPlate;
-      
-      // Random initial velocity
-      this.velocities[i * 2] = (Math.random() - 0.5) * 0.01;
-      this.velocities[i * 2 + 1] = (Math.random() - 0.5) * 0.01;
-      
-      // Random life
-      this.lives[i] = 0.5 + Math.random() * 0.5;
+      const i3 = i * 3
+      const i2 = i * 2
+      this.pos[i3] = (Math.random() - 0.5) * 2 * spread
+      this.pos[i3 + 1] = (Math.random() - 0.5) * 2 * spread
+      this.pos[i3 + 2] = 0
+      this.vel[i2] = (Math.random() - 0.5) * 0.01
+      this.vel[i2 + 1] = (Math.random() - 0.5) * 0.01
+      this.life[i] = 0.5 + Math.random() * 0.5
     }
   }
 
-  setModes(modes: Array<{ m: number; n: number; amplitude: number }>): void {
-    this.modes = modes;
+  setModes(modes: ModeInput[], waveform?: OscillatorType): void {
+    this.modes = modes
+    if (waveform) this.currentWaveform = waveform
   }
 
   updateConfig(config: Partial<SimulationConfig>): void {
-    const prevCount = this.config.particleCount;
-    this.config = { ...this.config, ...config };
-    
-    // Recreate particles if count changed
-    if (config.particleCount && config.particleCount !== prevCount) {
-      const count = config.particleCount;
-      this.particles = new Float32Array(count * 2);
-      this.velocities = new Float32Array(count * 2);
-      this.lives = new Float32Array(count);
-      this.initializeParticles();
-      
-      this.particleGeometry.setAttribute('aPosition', new THREE.BufferAttribute(this.particles, 2));
-      this.particleGeometry.setAttribute('aVelocity', new THREE.BufferAttribute(this.velocities, 2));
-      this.particleGeometry.setAttribute('aLife', new THREE.BufferAttribute(this.lives, 1));
+    const prevCount = this.config.particleCount
+    const prevScheme = this.config.colorScheme
+    Object.assign(this.config, config)
+
+    if (config.particleCount !== undefined && config.particleCount !== prevCount) {
+      const count = config.particleCount
+      this.pos = new Float32Array(count * 3)
+      this.vel = new Float32Array(count * 2)
+      this.life = new Float32Array(count)
+      this.initParticles()
+      this.geometry.setAttribute('position', new THREE.BufferAttribute(this.pos, 3))
+      this.geometry.setAttribute('aVelocity', new THREE.BufferAttribute(this.vel, 2))
+      this.geometry.setAttribute('aLife', new THREE.BufferAttribute(this.life, 1))
+      if (this.animId === null) this.renderer.render(this.scene, this.camera)
     }
-    
-    // Update uniforms
+
+    if (config.colorScheme !== undefined && config.colorScheme !== prevScheme) {
+      const fragSrc = fragmentShaderForScheme(this.config.colorScheme)
+      const uniforms: Record<string, THREE.IUniform> = {
+        uPointSize: { value: this.config.particleSize },
+        uTime: { value: this.time },
+      }
+      if (this.config.colorScheme === 'neon') {
+        uniforms.uGlow = { value: this.config.glowIntensity }
+      }
+      if (this.config.colorScheme === 'custom') {
+        uniforms.uColorA = { value: hexToColor(this.config.customPrimary) }
+        uniforms.uColorB = { value: hexToColor(this.config.customSecondary) }
+      }
+      this.material = new THREE.ShaderMaterial({
+        vertexShader: VERTEX_SHADER,
+        fragmentShader: fragSrc,
+        uniforms,
+        transparent: true,
+        depthTest: false,
+        blending: THREE.AdditiveBlending,
+      })
+      this.points.material = this.material
+    }
+
+    if (config.customPrimary !== undefined && this.material.uniforms.uColorA) {
+      this.material.uniforms.uColorA.value = hexToColor(config.customPrimary)
+    }
+    if (config.customSecondary !== undefined && this.material.uniforms.uColorB) {
+      this.material.uniforms.uColorB.value = hexToColor(config.customSecondary)
+    }
+    if (config.backgroundColor !== undefined) {
+      this.renderer.setClearColor(hexToColor(config.backgroundColor), 1)
+    }
+
     if (config.particleSize !== undefined) {
-      this.particleMaterial.uniforms.uPointSize.value = config.particleSize;
+      this.material.uniforms.uPointSize.value = config.particleSize
     }
     if (config.plateSize !== undefined) {
-      this.particleMaterial.uniforms.uPlateSize.value = config.plateSize;
+      this.resize()
     }
-    
-    // Update color scheme
-    const colorMap: Record<string, number> = {
-      classic: 0,
-      rainbow: 1,
-      heat: 2,
-      ocean: 3,
-      neon: 4,
-    };
-    this.particleMaterial.uniforms.uColorScheme.value = colorMap[config.colorScheme ?? 'classic'];
   }
 
   resize(): void {
-    const rect = this.canvas.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio, 2);
-    const width = rect.width * dpr;
-    const height = rect.height * dpr;
-    
-    this.canvas.width = width;
-    this.canvas.height = height;
-    this.renderer.setSize(width, height);
-    
-    // Update aspect ratio
-    const aspect = width / height;
-    this.camera.left = -aspect;
-    this.camera.right = aspect;
-    this.camera.updateProjectionMatrix();
-    
-    this.particleMaterial.uniforms.uResolution.value.set(width, height);
+    if (this.destroyed) return
+    const rect = this.canvas.getBoundingClientRect()
+    const dpr = Math.min(window.devicePixelRatio, 2)
+    const w = rect.width * dpr
+    const h = rect.height * dpr
+    this.renderer.setSize(w, h, false)
+    const aspect = w / h
+    const half = this.config.plateSize
+    const z = this.zoom
+    if (aspect > 1) {
+      this.camera.left = (-half + this.panX) / z
+      this.camera.right = (half + this.panX) / z
+      this.camera.top = (half / aspect + this.panY) / z
+      this.camera.bottom = (-half / aspect + this.panY) / z
+    } else {
+      this.camera.left = (-half * aspect + this.panX) / z
+      this.camera.right = (half * aspect + this.panX) / z
+      this.camera.top = (half + this.panY) / z
+      this.camera.bottom = (-half + this.panY) / z
+    }
+    this.camera.updateProjectionMatrix()
+    if (this.animId === null) this.renderer.render(this.scene, this.camera)
   }
 
-  private updatePhysics(): void {
-    if (this.modes.length === 0) return;
-    
-    const count = this.particles.length / 2;
-    const { dampingFactor, noiseAmount, speedMultiplier, plateSize } = this.config;
-    const halfPlate = plateSize;
-    
+  setZoomPan(zoom: number, panX: number, panY: number): void {
+    this.zoom = Math.max(1, zoom)
+    this.panX = panX
+    this.panY = panY
+    this.resize()
+  }
+
+  private tickPhysics(dt: number): void {
+    if (this.modes.length === 0) return
+
+    const count = this.pos.length / 3
+    const { dampingFactor, noiseAmount, speedMultiplier, plateSize, vibrationIntensity } = this.config
+    const half = plateSize
+    const dtScale = Math.min(dt, 0.05)
+
     for (let i = 0; i < count; i++) {
-      const x = this.particles[i * 2];
-      const y = this.particles[i * 2 + 1];
-      
-      // Compute gradient at particle position
-      const { gx, gy } = computeChladniGradient(x, y, this.modes, plateSize);
-      
-      // Update velocity with gradient + noise (shaking effect)
-      this.velocities[i * 2] += gx * speedMultiplier * 0.01 + (Math.random() - 0.5) * noiseAmount * 0.1;
-      this.velocities[i * 2 + 1] += gy * speedMultiplier * 0.01 + (Math.random() - 0.5) * noiseAmount * 0.1;
-      
-      // Apply damping
-      this.velocities[i * 2] *= dampingFactor;
-      this.velocities[i * 2 + 1] *= dampingFactor;
-      
-      // Update position
-      this.particles[i * 2] += this.velocities[i * 2];
-      this.particles[i * 2 + 1] += this.velocities[i * 2 + 1];
-      
-      // Boundary check - bounce off edges
-      if (Math.abs(this.particles[i * 2]) > halfPlate) {
-        this.particles[i * 2] = Math.sign(this.particles[i * 2]) * halfPlate;
-        this.velocities[i * 2] *= -0.5;
-      }
-      if (Math.abs(this.particles[i * 2 + 1]) > halfPlate) {
-        this.particles[i * 2 + 1] = Math.sign(this.particles[i * 2 + 1]) * halfPlate;
-        this.velocities[i * 2 + 1] *= -0.5;
-      }
-      
-      // Update life based on velocity
-      const speed = Math.sqrt(
-        this.velocities[i * 2] ** 2 + this.velocities[i * 2 + 1] ** 2
-      );
-      this.lives[i] = Math.min(1.0, Math.max(0.1, 1.0 - speed * 5));
+      const i3 = i * 3
+      const i2 = i * 2
+      const x = this.pos[i3]
+      const y = this.pos[i3 + 1]
+
+      const { gx, gy } = computeChladniGradient(x, y, this.modes, plateSize)
+      const wg = applyWaveformToGradient(gx, gy, this.currentWaveform)
+
+      this.vel[i2] += (wg.gx * vibrationIntensity * speedMultiplier * 0.01 + (Math.random() - 0.5) * noiseAmount * 0.1) * dtScale
+      this.vel[i2 + 1] += (wg.gy * vibrationIntensity * speedMultiplier * 0.01 + (Math.random() - 0.5) * noiseAmount * 0.1) * dtScale
+
+      this.vel[i2] *= dampingFactor
+      this.vel[i2 + 1] *= dampingFactor
+
+      this.pos[i3] += this.vel[i2]
+      this.pos[i3 + 1] += this.vel[i2 + 1]
+
+      const period = half * 2
+      if (this.pos[i3] > half) this.pos[i3] -= period
+      else if (this.pos[i3] < -half) this.pos[i3] += period
+      if (this.pos[i3 + 1] > half) this.pos[i3 + 1] -= period
+      else if (this.pos[i3 + 1] < -half) this.pos[i3 + 1] += period
+
+      const speed = Math.sqrt(this.vel[i2] ** 2 + this.vel[i2 + 1] ** 2)
+      this.life[i] = Math.min(1, Math.max(0.1, 1.0 - speed * 5))
     }
-    
-    // Update buffer attributes
-    this.particleGeometry.attributes.aPosition.needsUpdate = true;
-    this.particleGeometry.attributes.aVelocity.needsUpdate = true;
-    this.particleGeometry.attributes.aLife.needsUpdate = true;
+
+    this.geometry.attributes.position.needsUpdate = true
+    this.geometry.attributes.aVelocity.needsUpdate = true
+    this.geometry.attributes.aLife.needsUpdate = true
   }
 
   start(): void {
-    if (this.animationId !== null) return;
-    
-    const animate = () => {
-      this.time += 0.016;
-      this.particleMaterial.uniforms.uTime.value = this.time;
-      
-      this.updatePhysics();
-      this.renderer.render(this.scene, this.camera);
-      
-      this.animationId = requestAnimationFrame(animate);
-    };
-    
-    animate();
+    if (this.animId !== null) return
+    this.lastTime = performance.now()
+
+    const loop = (now: number) => {
+      if (this.destroyed) return
+      const dt = (now - this.lastTime) / 1000
+      this.lastTime = now
+
+      this.time += dt
+      if (this.material.uniforms.uTime) {
+        this.material.uniforms.uTime.value = this.time
+      }
+
+      this.tickPhysics(dt)
+      this.renderer.render(this.scene, this.camera)
+      this.animId = requestAnimationFrame(loop)
+    }
+
+    this.animId = requestAnimationFrame(loop)
   }
 
   stop(): void {
-    if (this.animationId !== null) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
+    if (this.animId !== null) {
+      cancelAnimationFrame(this.animId)
+      this.animId = null
     }
   }
 
   reset(): void {
-    this.initializeParticles();
-    this.particleGeometry.attributes.aPosition.needsUpdate = true;
-    this.particleGeometry.attributes.aVelocity.needsUpdate = true;
-    this.particleGeometry.attributes.aLife.needsUpdate = true;
+    this.initParticles()
+    this.geometry.attributes.position.needsUpdate = true
+    this.geometry.attributes.aVelocity.needsUpdate = true
+    this.geometry.attributes.aLife.needsUpdate = true
+  }
+
+  getStats(fps: number): Record<string, string | number> {
+    const count = this.pos.length / 3
+    const half = this.config.plateSize
+    let sumSpeed = 0
+    let sumSpeedSq = 0
+    let sumSpeed3 = 0
+    let sumSpeed4 = 0
+    let maxSpeed = 0
+    let minSpeed = Infinity
+    let settledCount = 0
+    let activeCount = 0
+    let sumVx = 0
+    let sumVy = 0
+    let sumVort = 0
+    let sumDistCenter = 0
+    let nearCenterCount = 0
+    let sumGradMag = 0
+    const sampleRate = Math.max(1, Math.floor(count / 5000))
+    let samples = 0
+
+    for (let i = 0; i < count; i += sampleRate) {
+      const i2 = i * 2
+      const i3 = i * 3
+      const vx = this.vel[i2]
+      const vy = this.vel[i2 + 1]
+      const speed = Math.sqrt(vx * vx + vy * vy)
+      sumSpeed += speed
+      sumSpeedSq += speed * speed
+      sumSpeed3 += speed * speed * speed
+      sumSpeed4 += speed * speed * speed * speed
+      if (speed > maxSpeed) maxSpeed = speed
+      if (speed < minSpeed) minSpeed = speed
+      if (speed < 0.01) settledCount++
+      if (speed > 0.05) activeCount++
+      sumVx += vx
+      sumVy += vy
+      sumVort += (this.pos[i3] * vy - this.pos[i3 + 1] * vx)
+      const dx = this.pos[i3]
+      const dy = this.pos[i3 + 1]
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      sumDistCenter += dist
+      if (dist < half * 0.3) nearCenterCount++
+
+      const { gx, gy } = computeChladniGradient(this.pos[i3], this.pos[i3 + 1], this.modes, half)
+      sumGradMag += Math.sqrt(gx * gx + gy * gy)
+      samples++
+    }
+
+    const avgSpeed = sumSpeed / samples
+    const dispersion = Math.sqrt(sumSpeedSq / samples - avgSpeed * avgSpeed)
+    const variance = sumSpeedSq / samples - avgSpeed * avgSpeed
+    const skewness = variance > 0 ? (sumSpeed3 / samples - 3 * avgSpeed * variance - avgSpeed * avgSpeed * avgSpeed) / (Math.sqrt(variance) ** 3) : 0
+    const kurtosis = variance > 0 ? (sumSpeed4 / samples) / (variance * variance) - 3 : 0
+    const driftVx = sumVx / samples
+    const driftVy = sumVy / samples
+    const driftMag = Math.sqrt(driftVx * driftVx + driftVy * driftVy)
+    const avgVort = sumVort / samples
+    const avgDistCenter = sumDistCenter / samples
+    const centerBias = (nearCenterCount / samples) * 100
+    const avgGrad = sumGradMag / samples
+
+    return {
+      fps: Math.round(fps),
+      particles: count,
+      activeMode: this.modes.length,
+      modesDetail: this.modes.map((m) => `(${m.m},${m.n})`).join(' '),
+      waveform: this.currentWaveform,
+      avgSpeed: avgSpeed.toFixed(5),
+      maxSpeed: maxSpeed.toFixed(5),
+      minSpeed: minSpeed.toFixed(5),
+      dispersion: dispersion.toFixed(5),
+      settled: ((settledCount / samples) * 100).toFixed(1) + '%',
+      energy: (sumSpeedSq * 0.5).toFixed(3),
+      temperature: (sumSpeedSq / samples * 0.5).toFixed(5),
+      activePct: ((activeCount / samples) * 100).toFixed(1) + '%',
+      drift: driftMag.toFixed(5),
+      vorticity: avgVort.toFixed(5),
+      centerDist: avgDistCenter.toFixed(3),
+      centerBias: centerBias.toFixed(1) + '%',
+      gradient: avgGrad.toFixed(5),
+      skewness: skewness.toFixed(3),
+      kurtosis: kurtosis.toFixed(3),
+      sweep: `+${(sumVx / samples * 1000).toFixed(3)}` + ` / ${(sumVy / samples * 1000).toFixed(3)}`,
+    }
   }
 
   destroy(): void {
-    this.stop();
-    this.particleGeometry.dispose();
-    this.particleMaterial.dispose();
-    this.renderer.dispose();
+    this.destroyed = true
+    this.stop()
+    this.geometry.dispose()
+    this.material.dispose()
+    this.renderer.dispose()
   }
 }

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,24 +13,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Z.ai Code Scaffold - AI-Powered Development",
-  description: "Modern Next.js scaffold optimized for AI-powered development with Z.ai. Built with TypeScript, Tailwind CSS, and shadcn/ui.",
-  keywords: ["Z.ai", "Next.js", "TypeScript", "Tailwind CSS", "shadcn/ui", "AI development", "React"],
-  authors: [{ name: "Z.ai Team" }],
+  title: "Chladni Pattern Simulator",
+  description:
+    "Interactive physics simulation of Chladni figures — geometric patterns formed by vibrating a plate covered with particles.",
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
-  },
-  openGraph: {
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
-    url: "https://chat.z.ai",
-    siteName: "Z.ai",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
+    icon: [
+      {
+        url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 108.1 108.89'%3E%3Cdefs%3E%3Cstyle%3E.cls-1%7Bfill:%2375a01a;fill-rule:evenodd%7D%3C/style%3E%3C/defs%3E%3Cg%3E%3Cpath class='cls-1' d='M1.19,55.72c-1.58-.38-1.58-2.64,0-3.02l15.13-3.6,20.72-5.01c.41-.1.84-.03,1.19.19l13.72,8.61c.97.61.97,2.01,0,2.62l-13.72,8.67c-.35.22-.79.29-1.19.2l-20.71-5.01-15.13-3.65ZM15.74,17.65c-.85-1.39.75-2.98,2.14-2.13l13.29,8.2,10.55,6.56c.57.35.84,1.03.69,1.68l-1.42,5.9c-.1.41-.03.83.19,1.19l.02.03c.87,1.39-.74,3.01-2.14,2.14l-.3-.19c-.35-.22-.78-.29-1.19-.19l-5.62,1.37c-.66.16-1.34-.12-1.69-.7l-6.38-10.49-8.14-13.36ZM17.56,93.06c-1.39.86-2.99-.73-2.14-2.12l8.13-13.35,6.5-10.69c.35-.58,1.04-.86,1.69-.7l5.81,1.43c.41.1.85.03,1.2-.2h0c1.39-.88,3.02.72,2.15,2.12l-.21.34c-.22.35-.28.77-.19,1.17l1.36,5.71c.16.65-.12,1.33-.69,1.68l-10.41,6.43-13.21,8.18ZM92.31,91.27c.85,1.39-.75,2.98-2.14,2.12l-13.21-8.18-10.61-6.57c-.57-.35-.85-1.03-.69-1.68l1.42-5.89c.1-.41.03-.83-.19-1.19l-.02-.03c-.87-1.39.74-3.01,2.14-2.14l.3.19c.35.22.78.29,1.19.19l5.62-1.37c.66-.16,1.34.12,1.69.7l6.38,10.49,8.13,13.35ZM90.52,15.86c1.39-.86,2.99.73,2.14,2.12l-8.15,13.43-6.5,10.63c-.35.58-1.04.86-1.69.7l-5.81-1.43c-.41-.1-.85-.03-1.2.2h0c-1.39.88-3.02-.72-2.15-2.12l.21-.34c.22-.35.28-.77.19-1.17l-1.36-5.71c-.16-.65.12-1.33.69-1.68l10.41-6.43,13.23-8.19ZM52.78,1.19c.38-1.59,2.64-1.59,3.02,0l3.62,15.24,4.91,20.91c.09.4.03.82-.19,1.17l-8.53,13.82c-.6.98-2.03.98-2.64,0l-8.59-13.82c-.22-.35-.29-.77-.19-1.18l4.98-20.91,3.62-15.24ZM106.91,53.23c1.58.38,1.58,2.63,0,3.01l-15.17,3.66-20.72,4.95c-.41.1-.83.03-1.18-.19l-13.72-8.62c-.97-.61-.97-2.01,0-2.62l13.72-8.67c.35-.22.79-.29,1.19-.2l20.71,5.01,15.17,3.66ZM55.29,107.7c-.38,1.59-2.65,1.59-3.02,0l-3.56-15.2-4.98-20.91c-.1-.4-.03-.82.19-1.17l8.53-13.82c.6-.98,2.03-.98,2.64,0l8.59,13.82c.22.35.29.77.19,1.18l-4.98,20.91-3.61,15.2Z'/%3E%3C/g%3E%3C/svg%3E",
+        type: "image/svg+xml",
+      },
+    ],
   },
 };
 
@@ -41,12 +32,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
-        <Toaster />
       </body>
     </html>
   );

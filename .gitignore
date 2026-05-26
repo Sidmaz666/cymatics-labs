@@ -52,3 +52,10 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Knowledge graph cache
+.understand-anything
+opencode-*
+
+# OS files
+Thumbs.db

@@ -1,194 +1,98 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useChladniStore, OscillatorConfig } from '@/lib/chladni-store';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState } from 'react'
+import { useChladniStore } from '@/lib/chladni-store'
+import { OscillatorConfig, OscillatorType, FREQUENCY_PRESETS } from '@/lib/chladni-physics'
+import { Slider } from '@/components/ui/slider'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  Trash2,
-  Waves,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+} from '@/components/ui/select'
+import { Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 
-interface OscillatorControlProps {
-  oscillator: OscillatorConfig;
-  index: number;
+const INDICATOR_COLORS = [
+  'bg-amber-500',
+  'bg-cyan-500',
+  'bg-pink-500',
+  'bg-accent',
+  'bg-purple-500',
+  'bg-orange-500',
+]
+
+const WAVEFORMS: OscillatorType[] = ['sine', 'square', 'sawtooth', 'triangle']
+
+interface Props {
+  oscillator: OscillatorConfig
+  index: number
 }
 
-export function OscillatorControl({ oscillator, index }: OscillatorControlProps) {
-  const { updateOscillator, removeOscillator } = useChladniStore();
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  const waveforms: OscillatorType[] = ['sine', 'square', 'sawtooth', 'triangle'];
-
-  const indicatorColors = [
-    'bg-amber-500',
-    'bg-cyan-500',
-    'bg-pink-500',
-    'bg-green-500',
-    'bg-purple-500',
-    'bg-orange-500',
-  ];
+export function OscillatorControl({ oscillator, index }: Props) {
+  const { updateOscillator, removeOscillator, oscillators } = useChladniStore()
+  const [expanded, setExpanded] = useState(true)
+  const canDelete = oscillators.length > 1
 
   return (
-    <Card className={cn(
-      "transition-all duration-200 bg-zinc-800 border-zinc-700",
-      !oscillator.enabled && "opacity-50"
-    )}>
-      <CardHeader className="py-3 px-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Switch
-              checked={oscillator.enabled}
-              onCheckedChange={(checked) => 
-                updateOscillator(oscillator.id, { enabled: checked })
-              }
-              className="data-[state=checked]:bg-emerald-600"
-            />
-            <div className="flex items-center gap-2">
-              <div className={cn("w-3 h-3 rounded-full", indicatorColors[index % indicatorColors.length])} />
-              <CardTitle className="text-sm font-semibold text-zinc-100">
-                Oscillator {index + 1}
-              </CardTitle>
-            </div>
+    <div className="rounded-lg border border-zinc-700 bg-zinc-800/50">
+      <div className="flex items-center px-3 py-2.5">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Switch
+            checked={oscillator.enabled}
+            onCheckedChange={(v) => updateOscillator(oscillator.id, { enabled: v })}
+            className="data-[state=checked]:bg-accent shrink-0"
+          />
+          <div className="flex items-center gap-2">
+            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${INDICATOR_COLORS[index % INDICATOR_COLORS.length]}`} />
+            <span className="text-sm font-medium text-zinc-100">
+              Osc {index + 1}
+            </span>
           </div>
-          <div className="flex items-center gap-1">
-            <div className="flex items-center gap-2 mr-2">
-              <Badge variant="outline" className="text-xs border-zinc-600 text-zinc-300 font-medium">
-                M={oscillator.modeM}, N={oscillator.modeN}
-              </Badge>
-              <Badge className="text-xs bg-zinc-700 text-zinc-200 font-medium">
-                {oscillator.frequency.toFixed(0)} Hz
-              </Badge>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-700"
-              onClick={() => setIsExpanded(!isExpanded)}
-            >
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-zinc-700"
-              onClick={() => removeOscillator(oscillator.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+          <Badge variant="outline" className="text-xs border-zinc-600 text-zinc-300 shrink-0">
+            ({oscillator.modeM},{oscillator.modeN})
+          </Badge>
+          <Badge className="text-xs bg-zinc-700 text-zinc-200 shrink-0">
+            {oscillator.frequency.toFixed(0)}Hz
+          </Badge>
         </div>
-      </CardHeader>
-      
-      {isExpanded && (
-        <CardContent className="pt-0 pb-4 px-4 space-y-5">
-          {/* Mode Numbers */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm text-zinc-300 font-medium">Mode M</Label>
-              <div className="flex items-center gap-2">
-                <Slider
-                  value={[oscillator.modeM]}
-                  onValueChange={([value]) => 
-                    updateOscillator(oscillator.id, { modeM: value })
-                  }
-                  min={1}
-                  max={20}
-                  step={1}
-                  className="flex-1"
-                />
-                <Input
-                  type="number"
-                  value={oscillator.modeM}
-                  onChange={(e) => 
-                    updateOscillator(oscillator.id, { 
-                      modeM: Math.max(1, Math.min(20, parseInt(e.target.value) || 1)) 
-                    })
-                  }
-                  className="w-14 h-8 text-center bg-zinc-700 border-zinc-600 text-zinc-100 font-mono"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label className="text-sm text-zinc-300 font-medium">Mode N</Label>
-              <div className="flex items-center gap-2">
-                <Slider
-                  value={[oscillator.modeN]}
-                  onValueChange={([value]) => 
-                    updateOscillator(oscillator.id, { modeN: value })
-                  }
-                  min={1}
-                  max={20}
-                  step={1}
-                  className="flex-1"
-                />
-                <Input
-                  type="number"
-                  value={oscillator.modeN}
-                  onChange={(e) => 
-                    updateOscillator(oscillator.id, { 
-                      modeN: Math.max(1, Math.min(20, parseInt(e.target.value) || 1)) 
-                    })
-                  }
-                  className="w-14 h-8 text-center bg-zinc-700 border-zinc-600 text-zinc-100 font-mono"
-                />
-              </div>
-            </div>
-          </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 text-zinc-400 hover:text-white hover:bg-zinc-700 shrink-0"
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+        </Button>
+      </div>
 
-          {/* Frequency */}
-          <div className="space-y-2">
+      {expanded && (
+        <div className="px-3 pb-3 space-y-3.5 border-t border-zinc-700/50 pt-3">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-sm text-zinc-300 font-medium">Frequency</Label>
-              <span className="text-sm font-mono text-emerald-400">{oscillator.frequency.toFixed(1)} Hz</span>
+              <Label className="text-xs text-zinc-400">Frequency</Label>
+              <span className="text-xs font-mono text-accent">{oscillator.frequency.toFixed(1)} Hz</span>
             </div>
             <Slider
               value={[oscillator.frequency]}
-              onValueChange={([value]) => 
-                updateOscillator(oscillator.id, { frequency: value })
-              }
-              min={20}
-              max={2000}
-              step={0.1}
-              className="w-full"
+              onValueChange={([v]) => updateOscillator(oscillator.id, { frequency: v })}
+              min={20} max={2000} step={0.1}
             />
-            <div className="flex gap-1 flex-wrap pt-1">
-              {[55, 110, 220, 330, 440, 660, 880].map((freq) => (
+            <div className="flex gap-1 flex-wrap pt-0.5">
+              {FREQUENCY_PRESETS.map((freq) => (
                 <Button
                   key={freq}
                   variant="outline"
                   size="sm"
-                  className={cn(
-                    "h-7 text-xs px-2.5 border-zinc-600 font-medium transition-colors",
-                    Math.abs(oscillator.frequency - freq) < 1 
-                      ? "bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500" 
-                      : "text-zinc-300 hover:text-white hover:bg-zinc-700"
-                  )}
+                  className={`h-6 text-[10px] px-2 border-zinc-600 font-medium ${
+                    Math.abs(oscillator.frequency - freq) < 1
+                      ? 'bg-accent text-white border-accent hover:bg-accent-darker'
+                      : 'text-zinc-300 hover:text-white hover:bg-zinc-700'
+                  }`}
                   onClick={() => updateOscillator(oscillator.id, { frequency: freq })}
                 >
                   {freq}
@@ -197,65 +101,63 @@ export function OscillatorControl({ oscillator, index }: OscillatorControlProps)
             </div>
           </div>
 
-          {/* Amplitude */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-sm text-zinc-300 font-medium">Amplitude</Label>
-              <span className="text-sm font-mono text-emerald-400">{(oscillator.amplitude * 100).toFixed(0)}%</span>
+              <Label className="text-xs text-zinc-400">Amplitude</Label>
+              <span className="text-xs font-mono text-accent">{(oscillator.amplitude * 100).toFixed(0)}%</span>
             </div>
             <Slider
               value={[oscillator.amplitude]}
-              onValueChange={([value]) => 
-                updateOscillator(oscillator.id, { amplitude: value })
-              }
-              min={0}
-              max={2}
-              step={0.01}
-              className="w-full"
+              onValueChange={([v]) => updateOscillator(oscillator.id, { amplitude: v })}
+              min={0} max={2} step={0.01}
             />
           </div>
 
-          {/* Waveform */}
-          <div className="space-y-2">
-            <Label className="text-sm text-zinc-300 font-medium">Waveform</Label>
-            <Select
-              value={oscillator.waveform}
-              onValueChange={(value: OscillatorType) => 
-                updateOscillator(oscillator.id, { waveform: value })
-              }
-            >
-              <SelectTrigger className="h-9 bg-zinc-700 border-zinc-600 text-zinc-100">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-700 border-zinc-600">
-                {waveforms.map((wf) => (
-                  <SelectItem key={wf} value={wf} className="text-zinc-100 capitalize focus:bg-zinc-600 focus:text-white">
-                    {wf}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Detune */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm text-zinc-300 font-medium">Detune</Label>
-              <span className="text-sm font-mono text-emerald-400">{oscillator.detune} cents</span>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-zinc-400">Waveform</Label>
+              <Select
+                value={oscillator.waveform}
+                onValueChange={(v: OscillatorType) => updateOscillator(oscillator.id, { waveform: v })}
+              >
+                <SelectTrigger className="h-8 bg-zinc-700 border-zinc-600 text-zinc-100 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-700 border-zinc-600">
+                  {WAVEFORMS.map((wf) => (
+                    <SelectItem key={wf} value={wf} className="text-zinc-100 capitalize text-xs focus:bg-zinc-600">
+                      {wf}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <Slider
-              value={[oscillator.detune]}
-              onValueChange={([value]) => 
-                updateOscillator(oscillator.id, { detune: value })
-              }
-              min={-100}
-              max={100}
-              step={1}
-              className="w-full"
-            />
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-zinc-400">Detune</Label>
+                <span className="text-xs font-mono text-accent">{oscillator.detune}c</span>
+              </div>
+              <Slider
+                value={[oscillator.detune]}
+                onValueChange={([v]) => updateOscillator(oscillator.id, { detune: v })}
+                min={-100} max={100} step={1}
+              />
+            </div>
           </div>
-        </CardContent>
+
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full h-8 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 mt-1"
+              onClick={() => removeOscillator(oscillator.id)}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+              Delete Oscillator
+            </Button>
+          )}
+        </div>
       )}
-    </Card>
-  );
+    </div>
+  )
 }
