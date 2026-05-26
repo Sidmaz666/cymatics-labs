@@ -183,14 +183,6 @@ export function ControlPanel() {
   return (
     <div className="h-full flex flex-col bg-zinc-950 border-l border-zinc-800">
       <div className="flex-shrink-0 p-3 border-b border-zinc-800 space-y-3">
-        <Button
-          className="w-full bg-accent hover:bg-accent-darker text-white text-sm h-10 font-medium"
-          onClick={() => setPlaying(!isPlaying)}
-        >
-          {isPlaying ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-          {isPlaying ? 'Stop Simulation' : 'Start Simulation'}
-        </Button>
-
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -232,6 +224,14 @@ export function ControlPanel() {
             }}
           />
         </div>
+
+        <Button
+          className="w-full bg-accent hover:bg-accent-darker text-white text-sm h-10 font-medium"
+          onClick={() => setPlaying(!isPlaying)}
+        >
+          {isPlaying ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+          {isPlaying ? 'Stop Simulation' : 'Start Simulation'}
+        </Button>
 
         <Button
           variant="outline"
