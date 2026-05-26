@@ -102,6 +102,9 @@ export const useChladniStore = create<ChladniState>((set, get) => ({
   setMicEnabled: (enabled) => set((s) => ({
     micEnabled: enabled,
     audioFileEnabled: enabled ? false : s.audioFileEnabled,
+    oscillators: enabled
+      ? s.oscillators.map((o) => ({ ...o, enabled: false }))
+      : s.oscillators,
   })),
   setAudioFile: (fileName, fileData) => set((s) => ({
     audioFileName: fileName,

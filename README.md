@@ -24,6 +24,8 @@ Today, cymatics informs fields as diverse as **acoustic levitation**, **ultrason
 ## Features
 
 - **Real-time particle simulation** — GPU-accelerated WebGL rendering via Three.js (up to 200k particles) with automatic Canvas 2D CPU fallback
+- **Microphone capture** — Use your device microphone as a live audio source; dominant frequencies drive the Chladni pattern in real time
+- **Audio file playback** — Upload any audio file; its frequency content is analyzed on-the-fly and mapped to standing wave modes
 - **Multi-oscillator audio engine** — Independent sine/square/sawtooth/triangle oscillators with per-oscillator frequency, amplitude, detune, and waveform controls
 - **Frequency-driven mode mapping** — Mode numbers (m, n) are automatically derived from frequency: `m = round(√(f/220) × 3)`, `n = round(√(f/220) × 5)`, coupling pitch to pattern complexity
 - **35 built-in presets** — Sacred Geometry & Yantra (10), Sonic & Harmonic (10), Classical Chladni (5), Complex & Symmetric (10)
@@ -196,7 +198,16 @@ flowchart LR
 |---------|--------|
 | **Start / Stop** | Toggle particle simulation & audio |
 | **Record Video** | Capture canvas to `.webm` (only when playing) |
+| **Capture Image** | Download canvas as `.png` |
 | **Reset Defaults** | Restore initial state |
+
+### Audio Capture
+
+| Control | Action |
+|---------|--------|
+| **Mic toggle** | Enable live microphone capture — oscillators are disabled; dominant FFT peaks drive the pattern |
+| **Upload Audio** | Upload an audio file — decoded and analysed in real time; oscillators are disabled by default |
+| **Oscillator re-enable** | Turn oscillators back on to blend synthesis with live/uploaded audio |
 
 ### Interactive Canvas
 
@@ -306,6 +317,7 @@ src/
 │   ├── chladni-simulation.ts         # Three.js WebGL GPU simulation
 │   ├── chladni-simulation-cpu.ts     # Canvas 2D CPU fallback
 │   ├── audio-engine.ts               # Web Audio API engine with deferred init
+│   ├── audio-capture.ts              # Microphone & audio file FFT capture
 │   ├── chladni-store.ts              # Zustand store (oscillators, simulation, presets)
 │   └── utils.ts                      # Tailwind merge utility
 └── hooks/

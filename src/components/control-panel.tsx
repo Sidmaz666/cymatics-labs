@@ -184,19 +184,19 @@ export function ControlPanel() {
     <div className="h-full flex flex-col bg-zinc-950 border-l border-zinc-800">
       <div className="flex-shrink-0 p-3 border-b border-zinc-800 space-y-3">
         <div className="flex items-center gap-2">
+          <Label className="text-xs text-zinc-400 flex items-center gap-1.5 cursor-pointer select-none" onClick={() => setMicEnabled(!micEnabled)}>
+            <Mic className="h-3.5 w-3.5" />
+            Capture Audio from the Device Microphone
+          </Label>
           <button
             type="button"
             role="switch"
             aria-checked={micEnabled}
             onClick={() => setMicEnabled(!micEnabled)}
-            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none ${micEnabled ? 'bg-accent' : 'bg-zinc-700'}`}
+            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none ml-auto ${micEnabled ? 'bg-accent' : 'bg-zinc-700'}`}
           >
             <span className={`pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform ${micEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
           </button>
-          <Label className="text-xs text-zinc-400 flex items-center gap-1.5 cursor-pointer" onClick={() => setMicEnabled(!micEnabled)}>
-            <Mic className="h-3.5 w-3.5" />
-            Capture Audio from the Device Microphone
-          </Label>
         </div>
 
         <div className="flex items-center gap-2">
