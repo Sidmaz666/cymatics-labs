@@ -197,17 +197,16 @@ export function ControlPanel() {
             type="button"
             role="switch"
             aria-checked={micEnabled}
-            onClick={async () => {
+            onClick={() => {
             if (micEnabled) {
               getAudioCapture().stop()
+              setMicEnabled(false)
             } else {
-              try {
-                await getAudioCapture().startMic()
-              } catch {
-                return
-              }
+              getAudioCapture().initContext()
+              getAudioCapture().startMic().then(() => {
+                setMicEnabled(true)
+              }).catch(() => {})
             }
-            setMicEnabled(!micEnabled)
           }}
             className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none ml-auto ${micEnabled ? 'bg-accent' : 'bg-zinc-700'}`}
           >
@@ -230,16 +229,19 @@ export function ControlPanel() {
             type="file"
             accept="audio/*"
             className="hidden"
-            onChange={async (e) => {
+            onChange={(e) => {
               const file = e.target.files?.[0]
               if (file) {
-                const buffer = await file.arrayBuffer()
-                setAudioFile(file.name, buffer)
-                try {
-                  await getAudioCapture().startFile(new File([buffer], file.name))
-                } catch {
-                  setAudioFile(null)
-                }
+                getAudioCapture().initContext()
+                ;(async () => {
+                  const buffer = await file.arrayBuffer()
+                  setAudioFile(file.name, buffer)
+                  try {
+                    await getAudioCapture().startFileFromBuffer(buffer, file.name)
+                  } catch {
+                    setAudioFile(null)
+                  }
+                })()
               }
               e.target.value = ''
             }}

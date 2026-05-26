@@ -1,5 +1,4 @@
 import { useChladniStore } from './chladni-store'
-import { computeModesFromFrequency } from './chladni-physics'
 
 class AudioCaptureManager {
   private ctx: AudioContext | null = null
@@ -15,15 +14,19 @@ class AudioCaptureManager {
     return this._active
   }
 
-  async startMic(): Promise<void> {
-    if (this._active === 'mic') return
-    this.stop()
-
+  /** Call synchronously inside a user-gesture handler to ensure AudioContext runs.
+   *  Safe to call multiple times; only the first call creates the context. */
+  initContext(): void {
+    if (this.ctx) return
     this.ctx = new AudioContext()
-    if (this.ctx.state === 'suspended') await this.ctx.resume()
-    if (this.ctx.state !== 'running') {
-      this.ctx = new AudioContext()
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume()
     }
+  }
+
+  async startMic(): Promise<void> {
+    this.stop()
+    if (!this.ctx) this.ctx = new AudioContext()
 
     this.stream = await navigator.mediaDevices.getUserMedia({ audio: true })
 
@@ -37,22 +40,15 @@ class AudioCaptureManager {
     this.startLoop()
   }
 
-  async startFile(file: File): Promise<void> {
-    if (this._active === 'file') return
+  async startFileFromBuffer(buffer: ArrayBuffer, fileName: string): Promise<void> {
     this.stop()
-
-    this.ctx = new AudioContext()
-    if (this.ctx.state === 'suspended') await this.ctx.resume()
-    if (this.ctx.state !== 'running') {
-      this.ctx = new AudioContext()
-    }
+    if (!this.ctx) this.ctx = new AudioContext()
 
     this.analyser = this.ctx.createAnalyser()
     this.analyser.fftSize = 2048
     this.analyser.smoothingTimeConstant = 0.7
 
-    const arrayBuffer = await file.arrayBuffer()
-    const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer)
+    const audioBuffer = await this.ctx.decodeAudioData(buffer.slice(0))
 
     this.gainNode = this.ctx.createGain()
     this.gainNode.gain.value = 0
