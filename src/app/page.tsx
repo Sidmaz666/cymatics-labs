@@ -14,6 +14,7 @@ import {
   Minimize2,
   Keyboard,
   Info,
+  Github,
 } from 'lucide-react'
 import {
   Dialog,
@@ -144,6 +145,16 @@ export default function Home() {
               </div>
             </DialogContent>
           </Dialog>
+
+          <a
+            href="https://github.com/Sidmaz666/cymatics-labs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-8 w-8 inline-flex items-center justify-center rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            title="View on GitHub"
+          >
+            <Github className="h-4 w-4" />
+          </a>
 
           <Button
             variant="ghost"
