@@ -5,6 +5,8 @@ import { Search, Move, Eye, EyeOff, ScrollText } from 'lucide-react'
 import { ChladniSimulation } from '@/lib/chladni-simulation'
 import { ChladniSimulationCPU } from '@/lib/chladni-simulation-cpu'
 import { useChladniStore } from '@/lib/chladni-store'
+import { AudioCapture } from '@/lib/audio-capture'
+import { computeModesFromFrequency } from '@/lib/chladni-physics'
 import { FieldVisualization } from './field-visualization'
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts'
 type Simulation = ChladniSimulation | ChladniSimulationCPU
@@ -69,7 +71,12 @@ export function SimulationCanvas() {
   const config = useChladniStore((s) => s.simulation)
   const isPlaying = useChladniStore((s) => s.isPlaying)
   const updateSimulation = useChladniStore((s) => s.updateSimulation)
+  const micEnabled = useChladniStore((s) => s.micEnabled)
+  const audioFileName = useChladniStore((s) => s.audioFileName)
+  const audioFileEnabled = useChladniStore((s) => s.audioFileEnabled)
+  const externalFrequencies = useChladniStore((s) => s.externalFrequencies)
   const showFieldOverlay = config.showFieldOverlay
+  const audioCaptureRef = useRef<AudioCapture | null>(null)
 
   panEnabledRef.current = panEnabled
 
@@ -143,14 +150,32 @@ export function SimulationCanvas() {
     }
   }, [])
 
-  useEffect(() => {
-    if (!simRef.current) return
-    const modes = oscillators
+  const computeModes = useCallback(() => {
+    const sim = simRef.current
+    if (!sim) return
+    const state = useChladniStore.getState()
+    const oscs = state.oscillators
+    const freqs = state.externalFrequencies
+
+    const oscillatorModes = oscs
       .filter((o) => o.enabled)
       .map((o) => ({ m: o.modeM, n: o.modeN, amplitude: o.amplitude }))
-    const wf = oscillators.find((o) => o.enabled)?.waveform ?? 'sine'
-    simRef.current.setModes(modes, wf)
-  }, [oscillators])
+
+    const externalModes = (state.micEnabled || (state.audioFileName && state.audioFileEnabled)) && freqs.length > 0
+      ? freqs.map((f) => {
+          const { modeM, modeN } = computeModesFromFrequency(f)
+          return { m: modeM, n: modeN, amplitude: 0.6 }
+        })
+      : []
+
+    const allModes = [...oscillatorModes, ...externalModes]
+    const wf = oscs.find((o) => o.enabled)?.waveform ?? 'sine'
+    sim.setModes(allModes, wf)
+  }, [])
+
+  useEffect(() => {
+    computeModes()
+  }, [oscillators, externalFrequencies, micEnabled, audioFileName, audioFileEnabled])
 
   useEffect(() => {
     if (!simRef.current) return
@@ -162,6 +187,45 @@ export function SimulationCanvas() {
     if (isPlaying) simRef.current.start()
     else simRef.current.stop()
   }, [isPlaying])
+
+  /* ---- Audio capture lifecycle ---- */
+  useEffect(() => {
+    const state = useChladniStore.getState()
+    if (state.micEnabled) {
+      const capture = new AudioCapture((freqs) => {
+        useChladniStore.getState().setExternalFrequencies(freqs)
+      })
+      audioCaptureRef.current = capture
+      capture.startMic().catch(() => {
+        useChladniStore.getState().setMicEnabled(false)
+      })
+      return () => {
+        capture.stop()
+        audioCaptureRef.current = null
+        useChladniStore.getState().setExternalFrequencies([])
+      }
+    } else if (state.audioFileName && state.audioFileEnabled && state.audioFileData) {
+      const file = new File([state.audioFileData], state.audioFileName, { type: 'audio/*' })
+      const capture = new AudioCapture((freqs) => {
+        useChladniStore.getState().setExternalFrequencies(freqs)
+      })
+      audioCaptureRef.current = capture
+      capture.startFile(file).catch(() => {
+        useChladniStore.getState().setAudioFileEnabled(false)
+      })
+      return () => {
+        capture.stop()
+        audioCaptureRef.current = null
+        useChladniStore.getState().setExternalFrequencies([])
+      }
+    } else {
+      if (audioCaptureRef.current) {
+        audioCaptureRef.current.stop()
+        audioCaptureRef.current = null
+      }
+      useChladniStore.getState().setExternalFrequencies([])
+    }
+  }, [micEnabled, audioFileName, audioFileEnabled])
 
   /* ---- Log stats polling ---- */
   useEffect(() => {

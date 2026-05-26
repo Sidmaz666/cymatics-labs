@@ -17,6 +17,12 @@ interface ChladniState {
   showControls: boolean
   presets: Preset[]
 
+  micEnabled: boolean
+  audioFileName: string | null
+  audioFileEnabled: boolean
+  audioFileData: ArrayBuffer | null
+  externalFrequencies: number[]
+
   addOscillator: () => void
   removeOscillator: (id: string) => void
   updateOscillator: (id: string, updates: Partial<OscillatorConfig>) => void
@@ -27,6 +33,11 @@ interface ChladniState {
   togglePlaying: () => void
   setMasterVolume: (volume: number) => void
   setShowControls: (show: boolean) => void
+
+  setMicEnabled: (enabled: boolean) => void
+  setAudioFile: (fileName: string | null, fileData?: ArrayBuffer | null) => void
+  setAudioFileEnabled: (enabled: boolean) => void
+  setExternalFrequencies: (freqs: number[]) => void
 
   savePreset: (name: string) => void
   loadPreset: (id: string) => void
@@ -42,6 +53,12 @@ export const useChladniStore = create<ChladniState>((set, get) => ({
   masterVolume: 0.3,
   showControls: true,
   presets: BUILTIN_PRESETS,
+
+  micEnabled: false,
+  audioFileName: null,
+  audioFileEnabled: false,
+  audioFileData: null,
+  externalFrequencies: [],
 
   addOscillator: () => {
     const id = `osc-${Date.now()}`
@@ -82,6 +99,11 @@ export const useChladniStore = create<ChladniState>((set, get) => ({
   setMasterVolume: (volume) => set({ masterVolume: volume }),
   setShowControls: (show) => set({ showControls: show }),
 
+  setMicEnabled: (enabled) => set({ micEnabled: enabled }),
+  setAudioFile: (fileName, fileData) => set({ audioFileName: fileName, audioFileData: fileData ?? null, audioFileEnabled: fileName !== null }),
+  setAudioFileEnabled: (enabled) => set({ audioFileEnabled: enabled }),
+  setExternalFrequencies: (freqs) => set({ externalFrequencies: freqs }),
+
   savePreset: (name) => {
     const { oscillators, simulation } = get()
     const preset: Preset = {
@@ -107,12 +129,15 @@ export const useChladniStore = create<ChladniState>((set, get) => ({
   },
 
   resetSimulation: () => {
-    const osc = createDefaultOscillator('osc-1')
-    const { modeM, modeN } = computeModesFromFrequency(osc.frequency)
     set({
-      oscillators: [{ ...osc, modeM, modeN }],
+      oscillators: [{ ...createDefaultOscillator('osc-1') }],
       simulation: createDefaultSimulation(),
       isPlaying: false,
+      micEnabled: false,
+      audioFileName: null,
+      audioFileEnabled: false,
+      audioFileData: null,
+      externalFrequencies: [],
     })
   },
 }))

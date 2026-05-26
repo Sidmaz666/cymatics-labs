@@ -34,6 +34,8 @@ import {
   RotateCcw,
   Circle,
   SquarePen,
+  Mic,
+  Music,
 } from 'lucide-react'
 
 function SliderRow({
@@ -113,8 +115,11 @@ export function ControlPanel() {
     isPlaying, setPlaying,
     masterVolume, setMasterVolume,
     presets, loadPreset, savePreset, resetSimulation,
+    micEnabled, setMicEnabled,
+    audioFileName, setAudioFile,
   } = useChladniStore()
   const importRef = useRef<HTMLInputElement>(null)
+  const audioFileInputRef = useRef<HTMLInputElement>(null)
   const [presetName, setPresetName] = useState('')
   const [recording, setRecording] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -185,6 +190,49 @@ export function ControlPanel() {
           {isPlaying ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
           {isPlaying ? 'Stop Simulation' : 'Start Simulation'}
         </Button>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={micEnabled}
+            onClick={() => setMicEnabled(!micEnabled)}
+            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none ${micEnabled ? 'bg-accent' : 'bg-zinc-700'}`}
+          >
+            <span className={`pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform ${micEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+          </button>
+          <Label className="text-xs text-zinc-400 flex items-center gap-1.5 cursor-pointer" onClick={() => setMicEnabled(!micEnabled)}>
+            <Mic className="h-3.5 w-3.5" />
+            Capture Audio from Microphone
+          </Label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 h-7 text-xs border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800"
+            onClick={() => audioFileInputRef.current?.click()}
+          >
+            <Music className="h-3 w-3 mr-1.5" />
+            {audioFileName || 'Upload Audio'}
+          </Button>
+          <input
+            ref={audioFileInputRef}
+            type="file"
+            accept="audio/*"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0]
+              if (file) {
+                const buffer = await file.arrayBuffer()
+                setAudioFile(file.name, buffer)
+              }
+              e.target.value = ''
+            }}
+          />
+        </div>
+
         <Button
           variant="outline"
           size="sm"
