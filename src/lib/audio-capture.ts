@@ -16,6 +16,7 @@ export class AudioCapture {
     this.stop()
 
     this.ctx = new AudioContext()
+    if (this.ctx.state === 'suspended') await this.ctx.resume()
     this.stream = await navigator.mediaDevices.getUserMedia({ audio: true })
 
     this.analyser = this.ctx.createAnalyser()
@@ -32,6 +33,8 @@ export class AudioCapture {
     this.stop()
 
     this.ctx = new AudioContext()
+    if (this.ctx.state === 'suspended') await this.ctx.resume()
+
     this.analyser = this.ctx.createAnalyser()
     this.analyser.fftSize = 2048
     this.analyser.smoothingTimeConstant = 0.7
@@ -45,8 +48,8 @@ export class AudioCapture {
     this.bufferSource = this.ctx.createBufferSource()
     this.bufferSource.buffer = audioBuffer
     this.bufferSource.loop = true
-    this.bufferSource.connect(this.gainNode)
-    this.gainNode.connect(this.analyser)
+    this.bufferSource.connect(this.analyser)
+    this.analyser.connect(this.gainNode)
     this.bufferSource.start()
 
     this.startLoop()

@@ -99,9 +99,26 @@ export const useChladniStore = create<ChladniState>((set, get) => ({
   setMasterVolume: (volume) => set({ masterVolume: volume }),
   setShowControls: (show) => set({ showControls: show }),
 
-  setMicEnabled: (enabled) => set({ micEnabled: enabled }),
-  setAudioFile: (fileName, fileData) => set({ audioFileName: fileName, audioFileData: fileData ?? null, audioFileEnabled: fileName !== null }),
-  setAudioFileEnabled: (enabled) => set({ audioFileEnabled: enabled }),
+  setMicEnabled: (enabled) => set((s) => ({
+    micEnabled: enabled,
+    audioFileEnabled: enabled ? false : s.audioFileEnabled,
+  })),
+  setAudioFile: (fileName, fileData) => set((s) => ({
+    audioFileName: fileName,
+    audioFileData: fileData ?? null,
+    audioFileEnabled: fileName !== null,
+    micEnabled: false,
+    oscillators: fileName !== null
+      ? s.oscillators.map((o) => ({ ...o, enabled: false }))
+      : s.oscillators,
+  })),
+  setAudioFileEnabled: (enabled) => set((s) => ({
+    audioFileEnabled: enabled,
+    micEnabled: false,
+    oscillators: enabled
+      ? s.oscillators.map((o) => ({ ...o, enabled: false }))
+      : s.oscillators,
+  })),
   setExternalFrequencies: (freqs) => set({ externalFrequencies: freqs }),
 
   savePreset: (name) => {

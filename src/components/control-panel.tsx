@@ -195,7 +195,7 @@ export function ControlPanel() {
           </button>
           <Label className="text-xs text-zinc-400 flex items-center gap-1.5 cursor-pointer" onClick={() => setMicEnabled(!micEnabled)}>
             <Mic className="h-3.5 w-3.5" />
-            Capture Audio from Microphone
+            Capture Audio from the Device Microphone
           </Label>
         </div>
 
