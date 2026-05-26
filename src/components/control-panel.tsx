@@ -166,6 +166,16 @@ export function ControlPanel() {
     return () => { destroyAudioCapture() }
   }, [])
 
+  /* Sync AudioCapture playback with simulation play/stop */
+  useEffect(() => {
+    const cap = getAudioCapture()
+    if (isPlaying && cap.hasFile) {
+      cap.startPlayback()
+    } else if (!isPlaying) {
+      cap.stopPlayback()
+    }
+  }, [isPlaying])
+
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -233,11 +243,11 @@ export function ControlPanel() {
               const file = e.target.files?.[0]
               if (file) {
                 getAudioCapture().initContext()
+                setAudioFile(file.name)
                 ;(async () => {
                   const buffer = await file.arrayBuffer()
-                  setAudioFile(file.name, buffer)
                   try {
-                    await getAudioCapture().startFileFromBuffer(buffer, file.name)
+                    await getAudioCapture().loadFile(buffer)
                   } catch {
                     setAudioFile(null)
                   }

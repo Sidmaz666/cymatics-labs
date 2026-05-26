@@ -159,7 +159,8 @@ export function SimulationCanvas() {
       .filter((o) => o.enabled)
       .map((o) => ({ m: o.modeM, n: o.modeN, amplitude: o.amplitude }))
 
-    const externalModes = (state.micEnabled || (state.audioFileName && state.audioFileEnabled)) && freqs.length > 0
+    const hasExtInput = state.micEnabled || (state.audioFileName && state.audioFileEnabled)
+    const externalModes = hasExtInput && freqs.length > 0
       ? freqs.map((f) => {
           const { modeM, modeN } = computeModesFromFrequency(f)
           return { m: modeM, n: modeN, amplitude: 0.6 }
@@ -383,6 +384,11 @@ export function SimulationCanvas() {
                 ({o.modeM},{o.modeN}) {o.frequency.toFixed(0)}Hz
               </div>
             ))
+        ) : externalFrequencies.length > 0 ? (
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/50 backdrop-blur-sm text-[11px] text-white/70 font-mono shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+            Audio: {externalFrequencies.map((f) => `${f}Hz`).join(', ')}
+          </div>
         ) : (
           <span className="px-2 py-1 rounded-full bg-black/50 backdrop-blur-sm text-[11px] text-white/30 font-mono">No active modes</span>
         )}
