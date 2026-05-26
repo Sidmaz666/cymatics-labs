@@ -5,7 +5,6 @@ import { Search, Move, Eye, EyeOff, ScrollText } from 'lucide-react'
 import { ChladniSimulation } from '@/lib/chladni-simulation'
 import { ChladniSimulationCPU } from '@/lib/chladni-simulation-cpu'
 import { useChladniStore } from '@/lib/chladni-store'
-import { AudioCapture } from '@/lib/audio-capture'
 import { computeModesFromFrequency } from '@/lib/chladni-physics'
 import { FieldVisualization } from './field-visualization'
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts'
@@ -76,7 +75,6 @@ export function SimulationCanvas() {
   const audioFileEnabled = useChladniStore((s) => s.audioFileEnabled)
   const externalFrequencies = useChladniStore((s) => s.externalFrequencies)
   const showFieldOverlay = config.showFieldOverlay
-  const audioCaptureRef = useRef<AudioCapture | null>(null)
 
   panEnabledRef.current = panEnabled
 
@@ -187,45 +185,6 @@ export function SimulationCanvas() {
     if (isPlaying) simRef.current.start()
     else simRef.current.stop()
   }, [isPlaying])
-
-  /* ---- Audio capture lifecycle ---- */
-  useEffect(() => {
-    const state = useChladniStore.getState()
-    if (state.micEnabled) {
-      const capture = new AudioCapture((freqs) => {
-        useChladniStore.getState().setExternalFrequencies(freqs)
-      })
-      audioCaptureRef.current = capture
-      capture.startMic().catch(() => {
-        useChladniStore.getState().setMicEnabled(false)
-      })
-      return () => {
-        capture.stop()
-        audioCaptureRef.current = null
-        useChladniStore.getState().setExternalFrequencies([])
-      }
-    } else if (state.audioFileName && state.audioFileEnabled && state.audioFileData) {
-      const file = new File([state.audioFileData], state.audioFileName, { type: 'audio/*' })
-      const capture = new AudioCapture((freqs) => {
-        useChladniStore.getState().setExternalFrequencies(freqs)
-      })
-      audioCaptureRef.current = capture
-      capture.startFile(file).catch(() => {
-        useChladniStore.getState().setAudioFileEnabled(false)
-      })
-      return () => {
-        capture.stop()
-        audioCaptureRef.current = null
-        useChladniStore.getState().setExternalFrequencies([])
-      }
-    } else {
-      if (audioCaptureRef.current) {
-        audioCaptureRef.current.stop()
-        audioCaptureRef.current = null
-      }
-      useChladniStore.getState().setExternalFrequencies([])
-    }
-  }, [micEnabled, audioFileName, audioFileEnabled])
 
   /* ---- Log stats polling ---- */
   useEffect(() => {

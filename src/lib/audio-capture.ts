@@ -1,22 +1,30 @@
-export class AudioCapture {
+import { useChladniStore } from './chladni-store'
+import { computeModesFromFrequency } from './chladni-physics'
+
+class AudioCaptureManager {
   private ctx: AudioContext | null = null
   private analyser: AnalyserNode | null = null
   private source: MediaStreamAudioSourceNode | AudioBufferSourceNode | null = null
   private stream: MediaStream | null = null
   private rafId: number | null = null
-  private onFrequencies: (freqs: number[]) => void
   private bufferSource: AudioBufferSourceNode | null = null
   private gainNode: GainNode | null = null
+  private _active: 'mic' | 'file' | null = null
 
-  constructor(onFrequencies: (freqs: number[]) => void) {
-    this.onFrequencies = onFrequencies
+  get active(): 'mic' | 'file' | null {
+    return this._active
   }
 
   async startMic(): Promise<void> {
+    if (this._active === 'mic') return
     this.stop()
 
     this.ctx = new AudioContext()
     if (this.ctx.state === 'suspended') await this.ctx.resume()
+    if (this.ctx.state !== 'running') {
+      this.ctx = new AudioContext()
+    }
+
     this.stream = await navigator.mediaDevices.getUserMedia({ audio: true })
 
     this.analyser = this.ctx.createAnalyser()
@@ -25,15 +33,19 @@ export class AudioCapture {
 
     this.source = this.ctx.createMediaStreamSource(this.stream)
     this.source.connect(this.analyser)
-
+    this._active = 'mic'
     this.startLoop()
   }
 
   async startFile(file: File): Promise<void> {
+    if (this._active === 'file') return
     this.stop()
 
     this.ctx = new AudioContext()
     if (this.ctx.state === 'suspended') await this.ctx.resume()
+    if (this.ctx.state !== 'running') {
+      this.ctx = new AudioContext()
+    }
 
     this.analyser = this.ctx.createAnalyser()
     this.analyser.fftSize = 2048
@@ -51,7 +63,7 @@ export class AudioCapture {
     this.bufferSource.connect(this.analyser)
     this.analyser.connect(this.gainNode)
     this.bufferSource.start()
-
+    this._active = 'file'
     this.startLoop()
   }
 
@@ -59,13 +71,14 @@ export class AudioCapture {
     const poll = () => {
       if (!this.analyser) return
       const freqs = extractDominantFrequencies(this.analyser, 5)
-      this.onFrequencies(freqs)
+      useChladniStore.getState().setExternalFrequencies(freqs)
       this.rafId = requestAnimationFrame(poll)
     }
     poll()
   }
 
   stop(): void {
+    this._active = null
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId)
       this.rafId = null
@@ -95,7 +108,7 @@ export class AudioCapture {
       this.ctx.close()
       this.ctx = null
     }
-    this.onFrequencies([])
+    useChladniStore.getState().setExternalFrequencies([])
   }
 }
 
@@ -120,4 +133,18 @@ function extractDominantFrequencies(analyser: AnalyserNode, count: number): numb
 
   peaks.sort((a, b) => b.amp - a.amp)
   return peaks.slice(0, count).map((p) => Math.round(p.freq))
+}
+
+let instance: AudioCaptureManager | null = null
+
+export function getAudioCapture(): AudioCaptureManager {
+  if (!instance) instance = new AudioCaptureManager()
+  return instance
+}
+
+export function destroyAudioCapture(): void {
+  if (instance) {
+    instance.stop()
+    instance = null
+  }
 }

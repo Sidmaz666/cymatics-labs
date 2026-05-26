@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { useChladniStore } from '@/lib/chladni-store'
 import { OscillatorControl } from './oscillator-control'
 import { COLOR_SCHEMES } from '@/lib/chladni-physics'
+import { getAudioCapture, destroyAudioCapture } from '@/lib/audio-capture'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
@@ -161,6 +162,10 @@ export function ControlPanel() {
     }
   }, [recording])
 
+  useEffect(() => {
+    return () => { destroyAudioCapture() }
+  }, [])
+
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -192,7 +197,18 @@ export function ControlPanel() {
             type="button"
             role="switch"
             aria-checked={micEnabled}
-            onClick={() => setMicEnabled(!micEnabled)}
+            onClick={async () => {
+            if (micEnabled) {
+              getAudioCapture().stop()
+            } else {
+              try {
+                await getAudioCapture().startMic()
+              } catch {
+                return
+              }
+            }
+            setMicEnabled(!micEnabled)
+          }}
             className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none ml-auto ${micEnabled ? 'bg-accent' : 'bg-zinc-700'}`}
           >
             <span className={`pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform ${micEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
@@ -219,6 +235,11 @@ export function ControlPanel() {
               if (file) {
                 const buffer = await file.arrayBuffer()
                 setAudioFile(file.name, buffer)
+                try {
+                  await getAudioCapture().startFile(new File([buffer], file.name))
+                } catch {
+                  setAudioFile(null)
+                }
               }
               e.target.value = ''
             }}
@@ -237,7 +258,7 @@ export function ControlPanel() {
           variant="outline"
           size="sm"
           className="w-full h-7 text-xs border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800"
-          onClick={resetSimulation}
+          onClick={() => { getAudioCapture().stop(); resetSimulation() }}
         >
           <RotateCcw className="h-3 w-3 mr-1.5" />
           Reset Defaults
