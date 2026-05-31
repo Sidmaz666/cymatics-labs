@@ -38,6 +38,9 @@ function fragmentShaderForScheme(scheme: ColorScheme): string {
     varying float vLife;
     varying float vIntensity;
 
+    uniform float uGlow;
+    uniform float uBrightness;
+
     ${schemeFn}
 
     void main() {
@@ -49,6 +52,8 @@ function fragmentShaderForScheme(scheme: ColorScheme): string {
       alpha *= vLife;
 
       vec3 color = getColor(vLife, vIntensity);
+      color *= uBrightness;
+      color *= (1.0 + uGlow * 0.3);
 
       gl_FragColor = vec4(color, alpha);
     }
@@ -104,13 +109,12 @@ function getSchemeFn(scheme: ColorScheme): string {
     case 'neon':
       return `
         uniform float uTime;
-        uniform float uGlow;
         vec3 getColor(float life, float intensity) {
           float t = life;
           vec3 pink = vec3(1.0, 0.0, 0.6);
           vec3 cyan = vec3(0.0, 1.0, 1.0);
           float cycle = sin(uTime * 2.0) * 0.5 + 0.5;
-          return mix(mix(pink, cyan, cycle), vec3(0.6, 0.0, 1.0), t) * (0.8 + t * 0.4 + uGlow * 0.3);
+          return mix(mix(pink, cyan, cycle), vec3(0.6, 0.0, 1.0), t) * (0.8 + t * 0.4);
         }
       `
     case 'custom':
@@ -181,12 +185,8 @@ export class ChladniSimulation {
     const uniforms: Record<string, THREE.IUniform> = {
       uPointSize: { value: config.particleSize },
       uTime: { value: 0 },
-    }
-    if (config.colorScheme === 'rainbow' || config.colorScheme === 'neon') {
-      uniforms.uTime = { value: 0 }
-    }
-    if (config.colorScheme === 'neon') {
-      uniforms.uGlow = { value: config.glowIntensity }
+      uGlow: { value: config.glowIntensity },
+      uBrightness: { value: config.brightness },
     }
     if (config.colorScheme === 'custom') {
       uniforms.uColorA = { value: hexToColor(config.customPrimary) }
@@ -254,9 +254,8 @@ export class ChladniSimulation {
       const uniforms: Record<string, THREE.IUniform> = {
         uPointSize: { value: this.config.particleSize },
         uTime: { value: this.time },
-      }
-      if (this.config.colorScheme === 'neon') {
-        uniforms.uGlow = { value: this.config.glowIntensity }
+        uGlow: { value: this.config.glowIntensity },
+        uBrightness: { value: this.config.brightness },
       }
       if (this.config.colorScheme === 'custom') {
         uniforms.uColorA = { value: hexToColor(this.config.customPrimary) }
@@ -285,6 +284,12 @@ export class ChladniSimulation {
 
     if (config.particleSize !== undefined) {
       this.material.uniforms.uPointSize.value = config.particleSize
+    }
+    if (config.glowIntensity !== undefined && this.material.uniforms.uGlow) {
+      this.material.uniforms.uGlow.value = config.glowIntensity
+    }
+    if (config.brightness !== undefined && this.material.uniforms.uBrightness) {
+      this.material.uniforms.uBrightness.value = config.brightness
     }
     if (config.plateSize !== undefined) {
       this.resize()
